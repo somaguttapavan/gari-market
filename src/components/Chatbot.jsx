@@ -14,12 +14,13 @@ const Chatbot = () => {
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
 
-    // Quick action suggestions
+    // Updated expert suggestions based on 80+ Q&A (Round 2)
     const suggestions = [
-        "Pest control tips",
-        "Tomato cultivation",
-        "Soil health advice",
-        "Market prices"
+        "Which crop to grow now?",
+        "Is my soil good or bad?",
+        "How to reduce farming costs?",
+        "Why are leaves yellowing?",
+        "Organic conversion guide"
     ];
 
     const scrollRef = useRef(null);

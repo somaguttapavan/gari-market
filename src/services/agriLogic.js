@@ -6,6 +6,7 @@ const AGRI_KNOWLEDGE = [
         keywords: ['convert', 'chemical', 'conversion'],
         response: "Converting chemical land into organic:\n1. Stop all chemical inputs immediately.\n2. Remove old chemical containers.\n3. Apply heavy organic matter (compost/FYM).\n4. Grow green manure crops.\n5. Recover soil for 1–2 seasons.\n6. Start with low-input crops."
     },
+    // ... (rest of the Qs will be added below the previous set)
     {
         keywords: ['test soil', 'soil testing', 'carbon'],
         response: "Soil Testing for Organic Farming:\n1. Collect soil from multiple spots.\n2. Mix samples properly.\n3. Dry in shade.\n4. Send to soil lab.\n5. Check pH and organic carbon.\n6. Plan inputs based on report."
@@ -205,10 +206,132 @@ const AGRI_KNOWLEDGE = [
         response: "Organic Sustainability:\n- Soil improves yearly.\n- Costs reduce.\n- Yield stabilizes.\n- Long-term profit increases."
     },
 
+    // 🌾 GENERAL FARMING QUESTIONS (Q1–Q30)
+    {
+        keywords: ['which crop', 'grow this season', 'kharif', 'rabi'],
+        response: "Choosing Seasonal Crops:\n1. Check current season (Kharif/Rabi/Summer).\n2. Review last year’s crop on that land.\n3. Check water availability.\n4. Analyze local market demand.\n5. Match crop to soil/climate."
+    },
+    {
+        keywords: ['soil good or bad', 'soil texture', 'holding capacity'],
+        response: "Assessing Soil Quality:\n1. Observe color and texture.\n2. Check water holding capacity.\n3. Review previous crop performance.\n4. Get a lab test.\n5. Improve weak areas with organic matter."
+    },
+    {
+        keywords: ['how much water', 'really need', 'growth stage'],
+        response: "Crop Water Needs:\n1. Identify current growth stage.\n2. Check moisture by hand (feel the soil).\n3. Avoid fixed daily timers.\n4. Water deeply, not frequently.\n5. Stop irrigation before harvest."
+    },
+    {
+        keywords: ['growth slow', 'slow growth', 'stunted'],
+        response: "Why Growth is Slow:\n1. Check soil fertility.\n2. Check irrigation frequency.\n3. Look for pests or diseases.\n4. Observe root health.\n5. Correct nutrition or water stress."
+    },
+    {
+        keywords: ['reduce costs', 'farming costs', 'expense'],
+        response: "Reducing Farming Costs:\n1. Eliminate unnecessary inputs.\n2. Use farm-made compost.\n3. Reduce chemical dependency.\n4. Practice crop rotation.\n5. Plan inputs before the season starts."
+    },
+    {
+        keywords: ['when apply fertilizer', 'base fertilizer', 'second dose'],
+        response: "Fertilizer Timing:\n1. Apply base fertilizer before sowing.\n2. Apply second dose during active growth.\n3. Avoid late-season heavy application.\n4. Observe crop response.\n5. Adjust based on plant health."
+    },
+    {
+        keywords: ['leaves turning yellow', 'yellow leaves', 'leaf yellow'],
+        response: "Why Leaves Yellow:\n1. Check nitrogen levels.\n2. Check for overwatering.\n3. Inspect the root zone.\n4. Look for pest damage.\n5. Correct the cause, not symptoms."
+    },
+    {
+        keywords: ['control pests early', 'inspect daily'],
+        response: "Early Pest Control:\n1. Inspect fields daily.\n2. Identify the pest correctly.\n3. Remove infected parts manually.\n4. Use control methods early.\n5. Don't wait for heavy damage."
+    },
+    {
+        keywords: ['which pest', 'attacking', 'pest chart'],
+        response: "Identifying Pests:\n1. Observe leaf damage patterns.\n2. Check under the leaves.\n3. Look for insects/eggs.\n4. Compare with pest charts.\n5. Apply targeted natural controls."
+    },
+    {
+        keywords: ['less flowering', 'flowering less', 'no flowers'],
+        response: "Why Flowering is Low:\n1. Check for excess nitrogen.\n2. Check for water stress.\n3. Ensure enough sunlight.\n4. Reduce plant stress.\n5. Balance nutrients."
+    },
+    {
+        keywords: ['increase yield naturally', 'improve soil health'],
+        response: "Natural Yield Improvement:\n1. Focus on soil health.\n2. Maintain consistent irrigation.\n3. Control pests early.\n4. Avoid plant stress.\n5. Harvest exactly on time."
+    },
+    {
+        keywords: ['fruits dropping', 'fruit drop'],
+        response: "Why Fruits Drop Early:\n1. Check moisture stress.\n2. Observe for pest attacks.\n3. Avoid sudden nutrient changes.\n4. Maintain even watering.\n5. Reduce stress during flowering."
+    },
+    {
+        keywords: ['when harvest', 'maturity signs'],
+        response: "Harvest Timing:\n1. Observe maturity signs (color/size).\n2. Stop irrigation before harvest.\n3. Harvest at the correct stage.\n4. Avoid delayed harvesting."
+    },
+    {
+        keywords: ['store harvested', 'storage'],
+        response: "Storing Harvested Produce:\n1. Remove damaged items.\n2. Dry in the shade.\n3. Avoid direct sunlight.\n4. Store in a cool, ventilated place."
+    },
+    {
+        keywords: ['yield lower', 'lower than last year'],
+        response: "Why Yield is Down:\n1. Compare weather patterns.\n2. Check soil fertility changes.\n3. Review pest pressure.\n4. Check seed quality.\n5. Improve weak areas next season."
+    },
+    {
+        keywords: ['prepare land', 'plough', 'residues'],
+        response: "Land Preparation:\n1. Remove crop residues.\n2. Plough to loosen soil.\n3. Apply organic matter.\n4. Level the field.\n5. Irrigate before sowing."
+    },
+    {
+        keywords: ['quality seeds', 'seed source'],
+        response: "Seed Selection:\n1. Buy from reliable sources.\n2. Check germination rates.\n3. Avoid damaged seeds.\n4. Treat seeds before sowing.\n5. Store properly."
+    },
+    {
+        keywords: ['lodging', 'falling down', 'plants falling'],
+        response: "Why Crops Fall (Lodging):\n1. Check for excess nitrogen.\n2. Observe wind/rain damage.\n3. Improve spacing.\n4. Strengthen stem growth.\n5. Avoid over-irrigation."
+    },
+    {
+        keywords: ['manage weeds', 'weed seed'],
+        response: "Effective Weed Management:\n1. Weed early (first 20-30 days).\n2. Avoid bare soil.\n3. Use mulching.\n4. Repeat regularly.\n5. Prevent weed seed formation."
+    },
+    {
+        keywords: ['heat stress', 'cooler hours'],
+        response: "Protecting from Heat:\n1. Mulch the soil.\n2. Irrigate during cool hours.\n3. Avoid midday operations.\n4. Reduce plant stress.\n5. Maintain soil moisture."
+    },
+    {
+        keywords: ['heavy rain', 'drainage', 'stagnation'],
+        response: "Protecting from Heavy Rain:\n1. Improve drainage systems.\n2. Remove water stagnation.\n3. Strengthen bunds.\n4. Spray preventive treatments.\n5. Replant if needed."
+    },
+    {
+        keywords: ['wilting', 'root rot'],
+        response: "Wilting After Watering:\n1. Check for root rot.\n2. Inspect drainage.\n3. Look for soil compaction.\n4. Improve aeration.\n5. Treat the root zone."
+    },
+    {
+        keywords: ['acidic', 'alkaline', 'ph range'],
+        response: "Checking Soil pH:\n1. Observe poor growth patterns.\n2. Get a soil test.\n3. Compare pH ranges.\n4. Apply corrective measures (lime/gypsum).\n5. Recheck next season."
+    },
+    {
+        keywords: ['crop rotation', 'leafy crops', 'alternate'],
+        response: "Planning Crop Rotation:\n1. Avoid the same crop repeatedly.\n2. Alternate root and leafy crops.\n3. Include legumes.\n4. Plan your yearly cycle.\n5. Observe soil response."
+    },
+    {
+        keywords: ['failure risk', 'risk'],
+        response: "Reducing Failure Risk:\n1. Choose suitable crops for your area.\n2. Use high-quality seeds.\n3. Maintain soil health.\n4. Monitor the field daily.\n5. Act early on all problems."
+    },
+    {
+        keywords: ['labor shortage', 'operations early'],
+        response: "Managing Labor Shortage:\n1. Plan operations early.\n2. Use simple mechanical tools.\n3. Reduce unnecessary tasks.\n4. Mulch to reduce weeding.\n5. Optimize work timing."
+    },
+    {
+        keywords: ['water shortage', 'shortage'],
+        response: "Irrigation in Shortages:\n1. Prioritize critical growth stages.\n2. Use mulching.\n3. Reduce evaporation.\n4. Avoid over-irrigation.\n5. Use the most efficient methods."
+    },
+    {
+        keywords: ['not uniform', 'soil variation'],
+        response: "Why Plants Aren't Uniform:\n1. Check seed quality.\n2. Observe spacing.\n3. Look for soil variations.\n4. Correct water distribution.\n5. Replace weak plants early."
+    },
+    {
+        keywords: ['next season', 'analyze'],
+        response: "Preparing for Next Season:\n1. Analyze current results.\n2. Improve soil quality.\n3. Plan rotation.\n4. Arrange inputs early.\n5. Learn from this year's mistakes."
+    },
+    {
+        keywords: ['profitable', 'profit margin'],
+        response: "Is Farming Profitable?:\n1. Calculate total costs.\n2. Calculate total yield.\n3. Compare with market prices.\n4. Analyze your profit margin.\n5. Improve efficiency next cycle."
+    },
+
     // Standard greetings & general info
     {
         keywords: ['hello', 'hi', 'namaste', 'hey'],
-        response: "Namaste! I am your AgriGrowth Assistant, now trained with 50+ new organic farming guides (Tomato, Potato, Beetroot, etc.). How can I help you today?"
+        response: "Namaste! I am your AgriGrowth Assistant, now trained with 80+ expert-verified guides (Organic Farming, Seasonal Crops, Pest Control & more). How can I help you today?"
     },
     {
         keywords: ['price', 'market', 'cost', 'sale'],
