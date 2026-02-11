@@ -2,16 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapPin, Navigation, Info, TrendingUp, Smartphone, Globe } from 'lucide-react';
 import { fetchMarketPrices, calculateTravelExpense, calculateDistance, getMarketCoords } from '../services/marketService';
+import { useLocation } from '../context/LocationContext';
 import { motion } from 'framer-motion';
 
 const LiveMarket = () => {
     const [searchParams] = useSearchParams();
     const detectedCrop = searchParams.get('crop');
 
-    const [location, setLocation] = useState(null);
-    const [locationSource, setLocationSource] = useState(null); // 'NATIVE_GPS' | 'BROWSER_GPS'
-    const [address, setAddress] = useState(null);
-    const [userState, setUserState] = useState(null); // Store user's state for sorting
+    const {
+        location, setLocation,
+        locationSource, setLocationSource,
+        address, setAddress,
+        userState, setUserState,
+        isNative
+    } = useLocation();
+
     const [markets, setMarkets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -32,10 +37,24 @@ const LiveMarket = () => {
             if (userLat && marketCoords) {
                 distance = calculateDistance(userLat, userLon, marketCoords.lat, marketCoords.lon);
             } else {
-                // FALLBACK: If we don't know the exact market coords, 
-                // we assign a stable but pseudo-random distance for demonstration
-                const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                distance = (hash % 80) + 10; // Stable distance between 10km and 90km
+                // If we are in Tamil Nadu but the market is in Odisha, and we don't have coords,
+                // we should NOT assign it a small distance.
+
+                if (userState && record.state) {
+                    const normUser = userState.toLowerCase().replace('state', '').trim();
+                    const recordState = record.state.toLowerCase();
+                    const isLocal = recordState.includes(normUser);
+
+                    if (isLocal) {
+                        const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                        distance = (hash % 60) + 20; // 20-80km for local unknown markets
+                    } else {
+                        distance = 999; // Far away for non-local unknown markets
+                    }
+                } else {
+                    const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                    distance = (hash % 80) + 120; // 120-200km default for unknown location
+                }
             }
 
             return {
@@ -44,7 +63,11 @@ const LiveMarket = () => {
                 travelExpense: calculateTravelExpense(distance)
             };
         })
-            .filter(m => m.distance <= 110)
+            .filter(m => {
+                // If we have pinpoint location and found markets within 110km, keep the limit.
+                // However, we'll first calculate everything and then re-evaluate.
+                return true;
+            })
             .sort((a, b) => {
                 // Priority 1: User's State (Normalized comparison)
                 if (userState) {
@@ -58,42 +81,23 @@ const LiveMarket = () => {
                 return a.distance - b.distance;
             });
 
-        setMarkets(processedMarkets);
+        // Final Filter: If we have nearby markets (<110km), show only those.
+        // If NO nearby markets but we have state matches, show state matches.
+        let finalMarkets = processedMarkets.filter(m => m.distance <= 110);
+
+        if (finalMarkets.length === 0 && userState) {
+            const normUser = userState.toLowerCase().replace('state', '').trim();
+            finalMarkets = processedMarkets.filter(m => m.state && m.state.toLowerCase().includes(normUser));
+        }
+
+        // If still empty, show everything initially available
+        if (finalMarkets.length === 0) finalMarkets = processedMarkets;
+
+        setMarkets(finalMarkets);
         setLoading(false);
     }, [location, detectedCrop, userState]);
 
     useEffect(() => {
-        const handleNativeMessage = (event) => {
-            try {
-                // WebView sends messages as stringified JSON or direct objects
-                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-                if (data.type === 'NATIVE_LOCATION' && data.coords) {
-                    const { latitude, longitude } = data.coords;
-                    setLocation({ lat: latitude, lon: longitude });
-                    setLocationSource('NATIVE_GPS');
-
-                    // Simple reverse geocoding via API
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-                        .then(res => res.json())
-                        .then(geoData => {
-                            if (geoData && geoData.address) {
-                                const city = geoData.address.city || geoData.address.town || geoData.address.village;
-                                const state = geoData.address.state;
-                                setAddress(`${city}, ${state}`);
-                                if (state) setUserState(state);
-                            }
-                        })
-                        .catch(() => console.error("Native Geocoding error"));
-                }
-            } catch {
-                // Ignore non-json messages
-            }
-        };
-
-        window.addEventListener('message', handleNativeMessage);
-        // Also support ReactNativeWebView specific messaging
-        document.addEventListener('message', handleNativeMessage);
-
         // Set a timeout to load data even if geolocation prompt is ignored
         const timeoutId = setTimeout(() => {
             if (!location) {
@@ -102,60 +106,52 @@ const LiveMarket = () => {
             }
         }, 5000);
 
-        // Get user geolocation (Standard Web API) - Only if not already getting native
-        if (navigator.geolocation && locationSource !== 'NATIVE_GPS') {
+        // Get user geolocation (Standard Web API) - Only if not native and no location yet
+        if (navigator.geolocation && !isNative && !locationSource) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     clearTimeout(timeoutId);
-                    // If we haven't received native location yet, use browser
-                    if (locationSource !== 'NATIVE_GPS') {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        setLocation({ lat, lon });
-                        setLocationSource('BROWSER_GPS');
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    setLocation(prev => {
+                        if (prev && prev.lat === lat && prev.lon === lon) return prev;
+                        console.log("LiveMarket: Location changed, updating state:", lat, lon);
+                        return { lat, lon };
+                    });
+                    setLocationSource('BROWSER_GPS');
 
-                        // Reverse Geocode
-                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data && data.address) {
-                                    const city = data.address.city || data.address.town || data.address.village || data.address.county;
-                                    const state = data.address.state;
-                                    setAddress(`${city}, ${state}`);
-                                    if (state) setUserState(state);
-                                }
-                            })
-                            .catch(e => console.error("Geocoding error", e));
-                    }
+                    // Reverse Geocode
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data && data.address) {
+                                const city = data.address.city || data.address.town || data.address.village || data.address.county;
+                                const state = data.address.state;
+                                setAddress(`${city}, ${state}`);
+                                if (state) setUserState(state);
+                            }
+                        })
+                        .catch(e => console.error("Geocoding error", e));
                 },
                 (err) => {
-                    // Only show error if we aren't using native GPS
-                    if (locationSource !== 'NATIVE_GPS') {
-                        clearTimeout(timeoutId);
-                        console.error("Geolocation error:", err);
-                        setTimeout(() => {
-                            setError("Location permission denied. Showing all markets.");
-                            loadMarketData();
-                        }, 0);
-                    }
+                    clearTimeout(timeoutId);
+                    console.error("Geolocation error:", err);
+                    setError("Location permission denied. Showing all markets.");
+                    loadMarketData();
                 }
             );
-        } else {
-            if (locationSource !== 'NATIVE_GPS') {
-                clearTimeout(timeoutId);
-                setTimeout(() => {
-                    setError("Geolocation not supported.");
-                    loadMarketData();
-                }, 0);
-            }
+        } else if (isNative || locationSource === 'NATIVE_GPS') {
+            // On native, we wait for the bridge which is already handled in LocationContext
+            clearTimeout(timeoutId);
+            if (location) loadMarketData();
+        } else if (!navigator.geolocation && !isNative) {
+            clearTimeout(timeoutId);
+            setError("Geolocation not supported.");
+            loadMarketData();
         }
 
-        return () => {
-            clearTimeout(timeoutId);
-            window.removeEventListener('message', handleNativeMessage);
-            document.removeEventListener('message', handleNativeMessage);
-        };
-    }, [locationSource]); // Removed location dependency to avoid loops, check logic if needed
+        return () => clearTimeout(timeoutId);
+    }, [isNative, locationSource, location, loadMarketData, setLocation, setLocationSource, setAddress, setUserState]);
 
     useEffect(() => {
         if (location) {
@@ -223,7 +219,7 @@ const LiveMarket = () => {
             </header>
 
             {/* Location Status Banner */}
-            {error && !location && (
+            {error && !location && !isNative && (
                 <div style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                         <MapPin size={24} style={{ marginTop: '2px', flexShrink: 0 }} />
@@ -342,8 +338,14 @@ const LiveMarket = () => {
                         ))
                     ) : (
                         <div style={{ textAlign: 'center', padding: '4rem', gridColumn: '1/-1' }}>
-                            <p style={{ color: 'var(--text-light)', fontSize: '1.2rem' }}>No markets found for this crop in your area.</p>
-                            <p style={{ marginTop: '0.5rem' }}>Try searching for a different crop like <strong>"Wheat"</strong>, <strong>"Rice"</strong>, or <strong>"Tomato"</strong>.</p>
+                            <p style={{ color: 'var(--text-light)', fontSize: '1.2rem' }}>
+                                {loading ? "Updating market data..." : "No markets found for this crop in your area."}
+                            </p>
+                            <p style={{ marginTop: '0.5rem' }}>
+                                {!location && !error
+                                    ? "We are still detecting your location to find the closest markets."
+                                    : "Try searching for a different crop like \"Wheat\", \"Rice\", or \"Tomato\"."}
+                            </p>
                         </div>
                     )}
                 </div>

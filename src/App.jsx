@@ -11,6 +11,7 @@ import QualityCheck from './pages/QualityCheck';
 import Cultivation from './pages/Cultivation';
 import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LocationProvider } from './context/LocationContext';
 
 const AppContent = () => {
   const { user, loading } = useAuth();
@@ -58,7 +59,9 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <LocationProvider>
+        <AppContent />
+      </LocationProvider>
     </AuthProvider>
   );
 }

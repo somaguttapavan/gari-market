@@ -54,7 +54,9 @@ const getFallbackMarkets = (commodity) => {
         // Karnataka
         { market: 'Bangalore', district: 'Bangalore', state: 'Karnataka', commodity: 'Potato', modal_price: '1800' },
         { market: 'Mysore', district: 'Mysore', state: 'Karnataka', commodity: 'Carrot', modal_price: '2600' },
-        { market: 'Hubli', district: 'Dharwad', state: 'Karnataka', commodity: 'Onion', modal_price: '1900' }
+        { market: 'Hubli', district: 'Dharwad', state: 'Karnataka', commodity: 'Onion', modal_price: '1900' },
+        { market: 'Trichy', district: 'Trichy', state: 'Tamil Nadu', commodity: 'Carrot', modal_price: '2800' },
+        { market: 'Ottanchatram', district: 'Dindigul', state: 'Tamil Nadu', commodity: 'Tomato', modal_price: '1600' }
     ];
 
     // Ensure all QualityCheck crops have at least one entry for meaningful fallback
@@ -103,7 +105,17 @@ const MARKET_COORDINATES = {
     'Kochi': { lat: 9.9312, lon: 76.2673 },
     'Kozhikode': { lat: 11.2588, lon: 75.7804 },
     'Thrissur': { lat: 10.5276, lon: 76.2144 },
-    // Others (retained for fallback matching)
+    // Odisha (Adding for accurate "Far Away" calculation)
+    'Karanjia': { lat: 21.9213, lon: 85.9723 },
+    'Mayurbhanj': { lat: 21.9351, lon: 86.7324 },
+    // More Tamil Nadu
+    'Erode': { lat: 11.3410, lon: 77.7172 },
+    'Tuticorin': { lat: 8.8053, lon: 78.1460 },
+    'Thanjavur': { lat: 10.7852, lon: 79.1378 },
+    // More Andhra Pradesh
+    'Tirupati': { lat: 13.6288, lon: 79.4192 },
+    'Anantapur': { lat: 14.6819, lon: 77.6006 },
+    // Others
     'Nashik': { lat: 19.997, lon: 73.789 },
     'Pune': { lat: 18.520, lon: 73.856 },
     'Mumbai': { lat: 19.076, lon: 72.877 },
@@ -114,7 +126,7 @@ const MARKET_COORDINATES = {
 
 // Real Haversine distance calculation
 export const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return Math.floor(Math.random() * 50) + 10;
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 999;
 
     const R = 6371; // km
     const dLat = (lat2 - lat1) * Math.PI / 180;
