@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Upload, CheckCircle, AlertTriangle, ArrowRight, Image as ImageIcon, Search } from 'lucide-react';
+import { Camera, CheckCircle, AlertTriangle, ArrowRight, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQualityCheck } from '../hooks/useQualityCheck';
 
-const CROPS = [
+export const CROPS = [
     'Tomato', 'Green Chillies', 'Bitter Guard', 'Cabbage', 'Methi Leaves',
     'Thota-Kura', 'Beet-root', 'Carrot', 'Ladies Finger', 'Ginger',
     'Brinjal', 'Onion', 'Sweet Potato', 'Potato', 'Ivy Gourd',
@@ -11,59 +12,20 @@ const CROPS = [
 ];
 
 const QualityCheck = () => {
-    const [targetCrop, setTargetCrop] = useState('');
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [result, setResult] = useState(null);
-    const [error, setError] = useState(null);
+    const {
+        targetCrop,
+        setTargetCrop,
+        selectedImage,
+        isAnalyzing,
+        result,
+        error,
+        handleImageUpload,
+        runAnalysis,
+        reset
+    } = useQualityCheck();
+
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
-
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                setSelectedImage(reader.result);
-                setError(null);
-                setResult(null);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const analyzeCrop = () => {
-        if (!targetCrop) {
-            setError("Please select the crop you are uploading first.");
-            return;
-        }
-
-        setIsAnalyzing(true);
-        setError(null);
-
-        // Simulate AI processing delay
-        setTimeout(() => {
-            // Logic: 10% chance it's the "wrong picture" (detected something else or no crop)
-            const randomCheck = Math.random();
-            if (randomCheck < 0.1) {
-                setError(`Invalid Image: We couldn't detect ${targetCrop} in this picture. It looks like you provided a different image.`);
-                setIsAnalyzing(false);
-                return;
-            }
-
-            const isGoodQuality = Math.random() > 0.3; // 70% chance of good quality
-
-            setResult({
-                crop: targetCrop,
-                quality: isGoodQuality ? 'Good' : 'Bad',
-                confidence: (Math.random() * 15 + 85).toFixed(2), // 85-100%
-                advice: isGoodQuality
-                    ? `Your ${targetCrop} looks healthy and ready for market! We recommend selling it soon for the best price.`
-                    : `We detected some signs of stress in your ${targetCrop}. You might want to consult our Chatbot for treatment advice before selling.`
-            });
-            setIsAnalyzing(false);
-        }, 2000);
-    };
 
     return (
         <div className="container" style={{ padding: '2rem 0' }}>
@@ -147,7 +109,7 @@ const QualityCheck = () => {
                                         alignItems: 'center',
                                         justifyContent: 'center'
                                     }}>
-                                        <button onClick={analyzeCrop} className="btn-primary" disabled={isAnalyzing}>
+                                        <button onClick={runAnalysis} className="btn-primary" disabled={isAnalyzing}>
                                             {isAnalyzing ? (
                                                 <>Analyzing...</>
                                             ) : (
@@ -160,7 +122,7 @@ const QualityCheck = () => {
 
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <button
-                                    onClick={() => { setSelectedImage(null); setResult(null); setError(null); }}
+                                    onClick={reset}
                                     style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
                                 >
                                     Change Photo

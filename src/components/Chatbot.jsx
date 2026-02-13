@@ -1,20 +1,23 @@
-// REBUILT CHATBOT V3 - RULE BASED (API-FREE)
+// REBUILT CHATBOT V4 - MODULAR & RULE BASED
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Sparkles, Info, MessageCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getLocalResponse } from '../services/agriLogic';
+import { useChatbot } from '../hooks/useChatbot';
 
 const Chatbot = () => {
-    const [isOpen, setIsOpen] = useState(false); // Only controls mobile toggle state
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-    const [messages, setMessages] = useState([
-        { role: 'bot', text: 'Namaste! I am your AgriGrowth Assistant. How can I help you with your farming journey today?' }
-    ]);
-    const [input, setInput] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
+    const {
+        messages,
+        isTyping,
+        isOpen,
+        setIsOpen,
+        sendMessage,
+        toggleOpen
+    } = useChatbot();
 
-    // Updated expert suggestions based on 80+ Q&A (Round 2)
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [input, setInput] = useState('');
+
     const suggestions = [
         "Which crop to grow now?",
         "Is my soil good or bad?",
@@ -26,11 +29,8 @@ const Chatbot = () => {
     const scrollRef = useRef(null);
     const navigate = useNavigate();
 
-    // Track screen size
     useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth <= 768);
-        };
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -41,28 +41,12 @@ const Chatbot = () => {
         }
     }, [messages, isTyping, isOpen, isMobile]);
 
-    const handleSend = async (customInput = null) => {
+    const handleSend = (customInput = null) => {
         const textToSend = typeof customInput === 'string' ? customInput : input;
-        if (!textToSend.trim() || isTyping) return;
+        if (!textToSend.trim()) return;
 
-        setMessages(prev => [...prev, { role: 'user', text: textToSend }]);
+        sendMessage(textToSend);
         if (typeof customInput !== 'string') setInput('');
-
-        setIsTyping(true);
-
-        // Simulate thinking time for better UX
-        setTimeout(() => {
-            const aiText = getLocalResponse(textToSend);
-
-            // Check for cultivation keywords to suggest guides
-            let link = null;
-            if (aiText.toLowerCase().match(/organic|guide|how to|cultivation/)) {
-                link = { label: "Explore Detailed Guides", url: "/cultivation" };
-            }
-
-            setMessages(prev => [...prev, { role: 'bot', text: aiText, link }]);
-            setIsTyping(false);
-        }, 800);
     };
 
     // Determine visibility: Always open on Desktop (!isMobile), Toggleable on Mobile
@@ -179,7 +163,7 @@ const Chatbot = () => {
             <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={toggleOpen}
                 className="chatbot-toggle-btn"
             >
                 {isOpen ? <X size={28} /> : <MessageCircle size={28} />}

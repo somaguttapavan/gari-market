@@ -3,25 +3,45 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const LocationContext = createContext();
 
 export const LocationProvider = ({ children }) => {
-    const [location, setLocation] = useState(null);
-    const [locationSource, setLocationSource] = useState(null);
-    const [address, setAddress] = useState(null);
-    const [userState, setUserState] = useState(null);
-    const [isNative, setIsNative] = useState(false);
+    const [location, setLocation] = useState(() => {
+        const saved = localStorage.getItem('agri_location');
+        return saved ? JSON.parse(saved) : null;
+    });
+    const [locationSource, setLocationSource] = useState(() => localStorage.getItem('agri_location_source'));
+    const [address, setAddress] = useState(() => localStorage.getItem('agri_address'));
+    const [userState, setUserState] = useState(() => localStorage.getItem('agri_user_state'));
+    const [loading, setLoading] = useState(!location);
+    const [error, setError] = useState(null);
+    const [isNative] = useState(() => {
+        return !!window.ReactNativeWebView || /wv|WebView/i.test(navigator.userAgent);
+    });
 
     useEffect(() => {
-        const isNativeWebView = !!window.ReactNativeWebView || /wv|WebView/i.test(navigator.userAgent);
-        setIsNative(isNativeWebView);
+        if (location) {
+            localStorage.setItem('agri_location', JSON.stringify(location));
+        }
+        if (locationSource) {
+            localStorage.setItem('agri_location_source', locationSource);
+        }
+        if (address) {
+            localStorage.setItem('agri_address', address);
+        }
+        if (userState) {
+            localStorage.setItem('agri_user_state', userState);
+        }
+    }, [location, locationSource, address, userState]);
+
+    useEffect(() => {
 
         const handleNativeLocation = (lat, lon) => {
             setLocation(prev => {
-                if (prev && prev.lat === lat && prev.lon === lon) {
-                    return prev; // SAME: Prevent re-render loop
+                if (prev && Math.abs(prev.lat - lat) < 0.001 && Math.abs(prev.lon - lon) < 0.001) {
+                    return prev; // Prevent unnecessary updates
                 }
 
                 console.log("Global Context: Location changed, updating state:", lat, lon);
 
-                // Only geocode if we don't have an address or location actually changed significantly
+                setLoading(true);
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
                     .then(res => res.json())
                     .then(geoData => {
@@ -32,7 +52,8 @@ export const LocationProvider = ({ children }) => {
                             if (state) setUserState(state);
                         }
                     })
-                    .catch(() => console.error("Global Context: Geocoding error"));
+                    .catch(() => console.error("Global Context: Geocoding error"))
+                    .finally(() => setLoading(false));
 
                 return { lat, lon };
             });
@@ -48,7 +69,9 @@ export const LocationProvider = ({ children }) => {
                 if (data.type === 'NATIVE_LOCATION' && data.coords) {
                     handleNativeLocation(data.coords.latitude, data.coords.longitude);
                 }
-            } catch (e) { }
+            } catch {
+                // Ignore parsing errors for non-JSON messages
+            }
         };
 
         window.addEventListener('message', handleMessage);
@@ -66,6 +89,8 @@ export const LocationProvider = ({ children }) => {
             locationSource, setLocationSource,
             address, setAddress,
             userState, setUserState,
+            loading, setLoading,
+            error, setError,
             isNative
         }}>
             {children}

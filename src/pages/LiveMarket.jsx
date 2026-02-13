@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MapPin, Navigation, Info, TrendingUp, Smartphone, Globe } from 'lucide-react';
-import { fetchMarketPrices, calculateTravelExpense, calculateDistance, getMarketCoords } from '../services/marketService';
+import { MapPin, Navigation, Info, TrendingUp, Smartphone, Globe, AlertTriangle } from 'lucide-react';
 import { useLocation } from '../context/LocationContext';
+import { useNearbyMarkets } from '../hooks/useNearbyMarkets';
 import { motion } from 'framer-motion';
 
 const LiveMarket = () => {
@@ -14,175 +14,132 @@ const LiveMarket = () => {
         locationSource, setLocationSource,
         address, setAddress,
         userState, setUserState,
+        loading: geoLoading,
+        error: geoError,
+        setError: setGeoError,
         isNative
     } = useLocation();
 
-    const [markets, setMarkets] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [manualState, setManualState] = useState('');
+    const [locationChecked, setLocationChecked] = useState(false);
 
-    const loadMarketData = React.useCallback(async () => {
-        setLoading(true);
-        const records = await fetchMarketPrices({ commodity: detectedCrop });
+    const { markets, loading: marketsLoading, error: marketsError, refresh } = useNearbyMarkets(
+        location,
+        userState,
+        detectedCrop,
+        manualState
+    );
 
-        const userLat = location?.lat;
-        const userLon = location?.lon;
+    const requestGeolocation = React.useCallback(async (retryMode = 'HIGH_ACCURACY') => {
+        if (!navigator.geolocation) {
+            setGeoError("Your browser doesn't support location services.");
+            setLocationChecked(true);
+            return;
+        }
 
-        // Calculate distances and filter to 110km radius (slight buffer for GPS jitter)
-        const processedMarkets = (records || []).map(record => {
-            // Pass the whole record for better matching (market/district/state)
-            const marketCoords = getMarketCoords(record);
-            let distance;
+        if (isNative) return;
 
-            if (userLat && marketCoords) {
-                distance = calculateDistance(userLat, userLon, marketCoords.lat, marketCoords.lon);
-            } else {
-                // If we are in Tamil Nadu but the market is in Odisha, and we don't have coords,
-                // we should NOT assign it a small distance.
+        // Reset error state on new request
+        if (retryMode === 'HIGH_ACCURACY') {
+            setGeoError(null);
+            setLocationChecked(false);
+        }
 
-                if (userState && record.state) {
-                    const normUser = userState.toLowerCase().replace('state', '').trim();
-                    const recordState = record.state.toLowerCase();
-                    const isLocal = recordState.includes(normUser);
+        // Helper to handle success
+        const handleSuccess = (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            setLocation({ lat, lon });
+            setLocationSource('BROWSER_GPS');
+            setLocationChecked(true);
+            setGeoError(null);
+        };
 
-                    if (isLocal) {
-                        const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        distance = (hash % 60) + 20; // 20-80km for local unknown markets
-                    } else {
-                        distance = 999; // Far away for non-local unknown markets
-                    }
-                } else {
-                    const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    distance = (hash % 80) + 120; // 120-200km default for unknown location
+        // Helper to handle IP fallback
+        const tryIpFallback = async () => {
+            console.log("GPS failed, trying IP fallback...");
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                if (data.latitude && data.longitude) {
+                    setLocation({ lat: data.latitude, lon: data.longitude });
+                    setLocationSource('IP_GEOLOCATION');
+                    setAddress(`${data.city}, ${data.region}`);
+                    setUserState(data.region);
+                    setLocationChecked(true);
+                    setGeoError(null); // Clear any previous GPS errors
+                    return true;
                 }
+            } catch (ipError) {
+                console.error("IP Geolocator failed:", ipError);
+                return false;
+            }
+            return false;
+        };
+
+        const handleFailure = async (err) => {
+            console.warn(`Geolocation attempt (${retryMode}) failed:`, err.message);
+
+            // If timed out or unavailable on high accuracy, try low accuracy
+            if (retryMode === 'HIGH_ACCURACY' && (err.code === 3 || err.code === 2)) {
+                console.log("Retrying with low accuracy...");
+                requestGeolocation('LOW_ACCURACY');
+                return;
             }
 
-            return {
-                ...record,
-                distance,
-                travelExpense: calculateTravelExpense(distance)
-            };
-        })
-            .filter(m => {
-                // If we have pinpoint location and found markets within 110km, keep the limit.
-                // However, we'll first calculate everything and then re-evaluate.
-                return true;
-            })
-            .sort((a, b) => {
-                // Priority 1: User's State (Normalized comparison)
-                if (userState) {
-                    const normUser = userState.toLowerCase().replace('state', '').trim();
-                    const aIsLocal = a.state && a.state.toLowerCase().includes(normUser);
-                    const bIsLocal = b.state && b.state.toLowerCase().includes(normUser);
-                    if (aIsLocal && !bIsLocal) return -1;
-                    if (!aIsLocal && bIsLocal) return 1;
-                }
-                // Priority 2: Distance
-                return a.distance - b.distance;
-            });
+            // If low accuracy also failed, or permission denied, try IP fallback
+            // Don't try IP fallback if permission was explicitly denied (code 1) - debatable, but usually respectful.
+            // However, user wants it to work. Let's try IP fallback for everything except explicit denial if we want to be aggressive,
+            // but for "Permission denied" (1), the browser blocked it. IP lookup doesn't need browser permission (it's server side logic essentially).
+            // So we CAN try IP fallback even if geolocation is denied.
 
-        // Final Filter: If we have nearby markets (<110km), show only those.
-        // If NO nearby markets but we have state matches, show state matches.
-        let finalMarkets = processedMarkets.filter(m => m.distance <= 110);
+            const ipSuccess = await tryIpFallback();
+            if (ipSuccess) return;
 
-        if (finalMarkets.length === 0 && userState) {
-            const normUser = userState.toLowerCase().replace('state', '').trim();
-            finalMarkets = processedMarkets.filter(m => m.state && m.state.toLowerCase().includes(normUser));
-        }
-
-        // If still empty, show everything initially available
-        if (finalMarkets.length === 0) finalMarkets = processedMarkets;
-
-        setMarkets(finalMarkets);
-        setLoading(false);
-    }, [location, detectedCrop, userState]);
-
-    useEffect(() => {
-        // Set a timeout to load data even if geolocation prompt is ignored
-        const timeoutId = setTimeout(() => {
-            if (!location) {
-                console.log("Geolocation timeout - loading data with default location");
-                loadMarketData();
+            // If everything fails
+            setLocationChecked(true);
+            let msg = "Could not get your location.";
+            if (err.code === 1) {
+                msg = "Location access was denied. We tried to guess your location from your IP but failed. Please select your state manually.";
+            } else if (err.code === 2) {
+                msg = "Location is temporarily unavailable. Please select your state manually.";
+            } else if (err.code === 3) {
+                msg = "Location request timed out. Please select your state manually.";
             }
-        }, 5000);
+            setGeoError(msg);
+        };
 
-        // Get user geolocation (Standard Web API) - Only if not native and no location yet
-        if (navigator.geolocation && !isNative && !locationSource) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    clearTimeout(timeoutId);
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    setLocation(prev => {
-                        if (prev && prev.lat === lat && prev.lon === lon) return prev;
-                        console.log("LiveMarket: Location changed, updating state:", lat, lon);
-                        return { lat, lon };
-                    });
-                    setLocationSource('BROWSER_GPS');
+        const options = {
+            enableHighAccuracy: retryMode === 'HIGH_ACCURACY',
+            timeout: retryMode === 'HIGH_ACCURACY' ? 5000 : 10000, // 5s for high, 10s for low
+            maximumAge: 0
+        };
 
-                    // Reverse Geocode
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data && data.address) {
-                                const city = data.address.city || data.address.town || data.address.village || data.address.county;
-                                const state = data.address.state;
-                                setAddress(`${city}, ${state}`);
-                                if (state) setUserState(state);
-                            }
-                        })
-                        .catch(e => console.error("Geocoding error", e));
-                },
-                (err) => {
-                    clearTimeout(timeoutId);
-                    console.error("Geolocation error:", err);
-                    setError("Location permission denied. Showing all markets.");
-                    loadMarketData();
-                }
-            );
-        } else if (isNative || locationSource === 'NATIVE_GPS') {
-            // On native, we wait for the bridge which is already handled in LocationContext
-            clearTimeout(timeoutId);
-            if (location) loadMarketData();
-        } else if (!navigator.geolocation && !isNative) {
-            clearTimeout(timeoutId);
-            setError("Geolocation not supported.");
-            loadMarketData();
-        }
+        navigator.geolocation.getCurrentPosition(handleSuccess, handleFailure, options);
 
-        return () => clearTimeout(timeoutId);
-    }, [isNative, locationSource, location, loadMarketData, setLocation, setLocationSource, setAddress, setUserState]);
+    }, [isNative, setLocation, setLocationSource, setGeoError, setAddress, setUserState]);
 
     useEffect(() => {
-        if (location) {
-            setTimeout(() => {
-                loadMarketData();
-            }, 0);
+        if (!location && !locationChecked && !isNative && !geoLoading) {
+            requestGeolocation();
         }
-    }, [location, loadMarketData]);
+    }, [location, locationChecked, isNative, geoLoading, requestGeolocation]);
 
     const handleNavigate = (market, district, state) => {
         const query = `${market}, ${district}, ${state}`;
         const queryUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
-        if (locationSource === 'NATIVE_GPS') {
-            // Send message to React Native app to open native maps
-            if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'OPEN_MAPS',
-                    query: query
-                }));
-            } else {
-                window.postMessage({
-                    type: 'OPEN_MAPS',
-                    query: query
-                }, '*');
-            }
+        if (isNative && window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'OPEN_MAPS',
+                query: query
+            }));
         } else {
-            // Web fallback
             window.open(queryUrl, '_blank');
         }
     };
+
+    const isLoading = geoLoading || marketsLoading;
 
     return (
         <div className="container" style={{ padding: '2rem 0' }}>
@@ -198,7 +155,7 @@ const LiveMarket = () => {
                     <TrendingUp size={window.innerWidth < 768 ? 28 : 36} /> Live Market Prices
                 </h2>
                 <p style={{ color: 'var(--text-light)', fontSize: window.innerWidth < 768 ? '0.95rem' : '1.1rem' }}>
-                    Real-time wholesale prices from markets within 100km radius.
+                    Real-time wholesale prices from markets near you.
                 </p>
 
                 {detectedCrop && (
@@ -218,49 +175,59 @@ const LiveMarket = () => {
                 )}
             </header>
 
-            {/* Location Status Banner */}
-            {error && !location && !isNative && (
-                <div style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+            {/* Error States */}
+            {(geoError || marketsError) && (
+                <div style={{ backgroundColor: '#fff1f2', color: '#e11d48', padding: '1.5rem', borderRadius: '0.5rem', marginBottom: '1.5rem', border: '1px solid #fda4af' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                        <MapPin size={24} style={{ marginTop: '2px', flexShrink: 0 }} />
-                        <div>
-                            <strong>Location access is currently blocked.</strong>
-                            <p style={{ marginTop: '0.25rem', fontSize: '0.9rem', opacity: 0.9 }}>
-                                To see markets near you, please enable <strong>Location Permissions</strong> for <strong>this app</strong> in your browser or device settings.
-                            </p>
-                            <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', backgroundColor: 'rgba(255,255,255,0.5)', padding: '0.5rem', borderRadius: '4px' }}>
-                                <em>Showing default markets for your region.</em>
+                        <AlertTriangle size={24} />
+                        <div style={{ flex: 1 }}>
+                            <strong>{geoError ? "Location Issue" : "Data Error"}</strong>
+                            <p style={{ marginTop: '0.25rem', fontSize: '0.9rem' }}>{geoError || marketsError}</p>
+
+                            <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem' }}>
+                                <button onClick={() => requestGeolocation()} className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
+                                    Retry GPS
+                                </button>
+                                <select
+                                    value={manualState}
+                                    onChange={(e) => {
+                                        setManualState(e.target.value);
+                                        setUserState(e.target.value);
+                                        setGeoError(null);
+                                    }}
+                                    style={{ padding: '0.5rem', borderRadius: '0.25rem', border: '1px solid #ccc' }}
+                                >
+                                    <option value="">Select State Manually</option>
+                                    {['Tamil Nadu', 'Andhra Pradesh', 'Kerala', 'Karnataka', 'Telangana', 'Maharashtra', 'Odisha'].map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {!location && !error && !loading && (
-                <div style={{ backgroundColor: '#fff7ed', color: '#c2410c', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <div className="animate-spin" style={{ width: 16, height: 16, border: '2px solid #c2410c', borderTopColor: 'transparent', borderRadius: '50%' }}></div>
-                    <span>Detecting your GPS location...</span>
-                </div>
-            )}
-
-            {location && (
+            {/* Location Status */}
+            {location && !isLoading && (
                 <div style={{ backgroundColor: '#f0fdf4', color: '#15803d', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     {locationSource === 'NATIVE_GPS' ? <Smartphone size={20} /> : <Globe size={20} />}
                     <span>
-                        <strong>{locationSource === 'NATIVE_GPS' ? '📱 Using High-Precision Device GPS' : '💻 Using Browser Location'}</strong>
-                        <br />
-                        <span style={{ fontSize: '0.9em', opacity: 0.9 }}>{address || "Coordinates Detected"}</span>
+                        <strong>{address || "Location Detected"}</strong>
+                        <span style={{ fontSize: '0.85em', marginLeft: '0.5rem', opacity: 0.8 }}>
+                            ({locationSource === 'NATIVE_GPS' ? 'Mobile GPS' : locationSource === 'IP_GEOLOCATION' ? 'IP Location' : 'Browser Location'})
+                        </span>
                     </span>
-                    <span style={{ marginLeft: 'auto', fontSize: '0.85rem', padding: '4px 8px', backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: '4px' }}>
-                        {locationSource === 'NATIVE_GPS' ? 'Native Mobile App' : 'Web Browser'}
-                    </span>
+                    <button onClick={() => requestGeolocation()} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#15803d', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <Navigation size={14} /> Update
+                    </button>
                 </div>
             )}
 
-            {loading ? (
+            {isLoading ? (
                 <div style={{ textAlign: 'center', padding: '4rem' }}>
                     <div className="animate-spin" style={{ width: '40px', height: '40px', border: '4px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto' }}></div>
-                    <p style={{ marginTop: '1rem' }}>Updating market data...</p>
+                    <p style={{ marginTop: '1rem', color: 'var(--text-light)' }}>{geoLoading ? "Identifying your location..." : "Fetching latest prices..."}</p>
                 </div>
             ) : (
                 <div style={{
@@ -271,81 +238,53 @@ const LiveMarket = () => {
                     {markets.length > 0 ? (
                         markets.map((market, index) => (
                             <motion.div
-                                key={index}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
+                                key={`${market.market}-${index}`}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.05 }}
                                 className="glass-card"
-                                style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                                style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div>
-                                        <h3 style={{ color: 'var(--primary)', fontWeight: '700' }}>{market.market}</h3>
-                                        <p style={{ fontSize: '0.875rem', color: 'var(--text-light)' }}>{market.district}, {market.state}</p>
+                                        <h3 style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '1.1rem' }}>{market.market}</h3>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{market.district}, {market.state}</p>
                                     </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <span style={{
-                                            backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                                            color: 'var(--primary)',
-                                            padding: '0.25rem 0.5rem',
-                                            borderRadius: '0.25rem',
-                                            fontSize: '0.75rem',
-                                            fontWeight: '700'
-                                        }}>
-                                            {market.distance} km away
-                                        </span>
-                                    </div>
+                                    <span style={{ backgroundColor: '#f0f9ff', color: '#0369a1', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600' }}>
+                                        {market.distance} km
+                                    </span>
                                 </div>
 
-                                <div style={{ padding: '1rem', backgroundColor: '#f1f5f9', borderRadius: '0.5rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <span style={{ color: 'var(--text-light)' }}>Commodity:</span>
-                                        <span style={{ fontWeight: '600' }}>{market.commodity}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <span style={{ color: 'var(--text-light)' }}>Modal Price:</span>
-                                        <span style={{ color: 'var(--primary-dark)', fontWeight: '700' }}>₹{market.modal_price}/quintal</span>
+                                <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', fontSize: '0.9rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                        <span style={{ color: '#64748b' }}>Price:</span>
+                                        <span style={{ fontWeight: '700', color: 'var(--secondary)' }}>₹{market.modal_price}/quintal</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: 'var(--text-light)' }}>Est. Travel Cost:</span>
-                                        <span style={{ color: 'var(--accent)', fontWeight: '700' }}>₹{market.travelExpense}</span>
+                                        <span style={{ color: '#64748b' }}>Est. Travel:</span>
+                                        <span style={{ fontWeight: '600' }}>₹{market.travelExpense}</span>
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
-                                    <button
-                                        onClick={() => handleNavigate(market.market, market.district, market.state)}
-                                        className="btn-primary"
-                                        style={{ flex: 1, justifyContent: 'center', fontSize: '0.9rem' }}
-                                    >
-                                        <Navigation size={16} /> Navigate
-                                    </button>
-                                    <button
-                                        style={{
-                                            padding: '0.75rem',
-                                            borderRadius: '0.5rem',
-                                            border: '1px solid #cbd5e1',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'var(--text-light)'
-                                        }}
-                                    >
-                                        <Info size={18} />
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => handleNavigate(market.market, market.district, market.state)}
+                                    className="btn-primary"
+                                    style={{ width: '100%', marginTop: 'auto' }}
+                                >
+                                    <Navigation size={16} /> Get Directions
+                                </button>
                             </motion.div>
                         ))
                     ) : (
                         <div style={{ textAlign: 'center', padding: '4rem', gridColumn: '1/-1' }}>
-                            <p style={{ color: 'var(--text-light)', fontSize: '1.2rem' }}>
-                                {loading ? "Updating market data..." : "No markets found for this crop in your area."}
+                            <div style={{ color: '#94a3b8', marginBottom: '1rem' }}><MapPin size={48} style={{ margin: '0 auto' }} /></div>
+                            <h3 style={{ color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Markets Found</h3>
+                            <p style={{ color: 'var(--text-light)', maxWidth: '400px', margin: '0 auto' }}>
+                                We couldn't find any markets near you for {detectedCrop || "this crop"}. Try selecting a different state or crop.
                             </p>
-                            <p style={{ marginTop: '0.5rem' }}>
-                                {!location && !error
-                                    ? "We are still detecting your location to find the closest markets."
-                                    : "Try searching for a different crop like \"Wheat\", \"Rice\", or \"Tomato\"."}
-                            </p>
+                            <button onClick={refresh} className="btn-secondary" style={{ marginTop: '1.5rem' }}>
+                                Refresh Data
+                            </button>
                         </div>
                     )}
                 </div>

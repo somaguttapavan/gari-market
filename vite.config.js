@@ -33,6 +33,7 @@ export default defineConfig({
       }
     })
   ],
+  clearScreen: false,
   server: {
     host: true
   }

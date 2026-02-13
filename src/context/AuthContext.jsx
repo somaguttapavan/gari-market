@@ -9,13 +9,16 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         // Check if user is logged in on mount
-        setTimeout(() => {
-            const storedUser = localStorage.getItem('agri_user');
-            if (storedUser) {
+        const storedUser = localStorage.getItem('agri_user');
+        if (storedUser) {
+            try {
                 setUser(JSON.parse(storedUser));
+            } catch (e) {
+                console.error("AuthContext: Error parsing stored user", e);
+                localStorage.removeItem('agri_user');
             }
-            setLoading(false);
-        }, 0);
+        }
+        setLoading(false);
     }, []);
 
     const login = (userData) => {

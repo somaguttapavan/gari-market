@@ -1,9 +1,14 @@
 import axios from 'axios';
+import { FALLBACK_MARKETS, MOCK_CROPS, MARKET_COORDINATES } from '../data/marketFallbacks';
 
 const API_KEY = '579b464db66ec23bdd000001b73df47ab4804781628ccb38420ee62a';
 const RESOURCE_ID = '9ef84268-d588-465a-a308-a864a43d0070';
 const BASE_URL = 'https://api.data.gov.in/resource';
 
+/**
+ * Fetches market prices with fallback support.
+ * Returns { data, error }
+ */
 export const fetchMarketPrices = async (params = {}) => {
     try {
         const queryParams = {
@@ -17,57 +22,29 @@ export const fetchMarketPrices = async (params = {}) => {
         }
 
         const response = await axios.get(`${BASE_URL}/${RESOURCE_ID}`, {
-            params: queryParams
+            params: queryParams,
+            timeout: 5000 // 5 seconds timeout
         });
 
         if (response.data && response.data.records && response.data.records.length > 0) {
-            return response.data.records;
+            return { data: response.data.records, error: null };
         }
-        return getFallbackMarkets(params.commodity);
+
+        return { data: getFallbackMarkets(params.commodity), error: null };
     } catch (error) {
         console.error('Error fetching market prices:', error);
-        return getFallbackMarkets(params.commodity);
+        return {
+            data: getFallbackMarkets(params.commodity),
+            error: error.code === 'ECONNABORTED' ? 'Market server is slow. Showing offline data.' : 'Network error. Showing offline data.'
+        };
     }
 };
 
 const getFallbackMarkets = (commodity) => {
-    const all = [
-        // Tamil Nadu
-        { market: 'Chennai', district: 'Chennai', state: 'Tamil Nadu', commodity: 'Tomato', modal_price: '1850' },
-        { market: 'Madurai', district: 'Madurai', state: 'Tamil Nadu', commodity: 'Onion', modal_price: '2400' },
-        { market: 'Coimbatore', district: 'Coimbatore', state: 'Tamil Nadu', commodity: 'Brinjal', modal_price: '1200' },
-        { market: 'Trichy', district: 'Trichy', state: 'Tamil Nadu', commodity: 'Tomato', modal_price: '1900' },
-        { market: 'Salem', district: 'Salem', state: 'Tamil Nadu', commodity: 'Cabbage', modal_price: '1100' },
-        { market: 'Erode', district: 'Erode', state: 'Tamil Nadu', commodity: 'Turmeric', modal_price: '7500' },
-        // Andhra Pradesh
-        { market: 'Visakhapatnam', district: 'Visakhapatnam', state: 'Andhra Pradesh', commodity: 'Rice', modal_price: '3600' },
-        { market: 'Vijayawada', district: 'Krishna', state: 'Andhra Pradesh', commodity: 'Mango', modal_price: '4500' },
-        { market: 'Guntur', district: 'Guntur', state: 'Andhra Pradesh', commodity: 'Chilli', modal_price: '18000' },
-        { market: 'Nellore', district: 'Nellore', state: 'Andhra Pradesh', commodity: 'Tomato', modal_price: '1750' },
-        { market: 'Kurnool', district: 'Kurnool', state: 'Andhra Pradesh', commodity: 'Onion', modal_price: '2100' },
-        { market: 'Tirupati', district: 'Chittoor', state: 'Andhra Pradesh', commodity: 'Green Chillies', modal_price: '3200' },
-        // Kerala
-        { market: 'Kochi', district: 'Ernakulam', state: 'Kerala', commodity: 'Coconut', modal_price: '2500' },
-        { market: 'Trivandrum', district: 'Thiruvananthapuram', state: 'Kerala', commodity: 'Banana', modal_price: '3200' },
-        { market: 'Kozhikode', district: 'Kozhikode', state: 'Kerala', commodity: 'Potato', modal_price: '1500' },
-        { market: 'Palakkad', district: 'Palakkad', state: 'Kerala', commodity: 'Rice', modal_price: '2800' },
-        // Karnataka
-        { market: 'Bangalore', district: 'Bangalore', state: 'Karnataka', commodity: 'Potato', modal_price: '1800' },
-        { market: 'Mysore', district: 'Mysore', state: 'Karnataka', commodity: 'Carrot', modal_price: '2600' },
-        { market: 'Hubli', district: 'Dharwad', state: 'Karnataka', commodity: 'Onion', modal_price: '1900' },
-        { market: 'Trichy', district: 'Trichy', state: 'Tamil Nadu', commodity: 'Carrot', modal_price: '2800' },
-        { market: 'Ottanchatram', district: 'Dindigul', state: 'Tamil Nadu', commodity: 'Tomato', modal_price: '1600' }
-    ];
+    const all = [...FALLBACK_MARKETS];
 
-    // Ensure all QualityCheck crops have at least one entry for meaningful fallback
-    const mockCrops = [
-        'Bitter Guard', 'Methi Leaves', 'Thota-Kura', 'Beet-root', 'Ladies Finger',
-        'Ginger', 'Sweet Potato', 'Ivy Gourd', 'Bottle Gourd', 'Grafting Beera',
-        'Cucumber', 'Broccoli', 'Red Cabbage'
-    ];
-
-    // Add dynamic mocks if they don't exist in 'all'
-    mockCrops.forEach(c => {
+    // Add dynamic mocks if they don't exist
+    MOCK_CROPS.forEach(c => {
         if (!all.find(m => m.commodity.toLowerCase() === c.toLowerCase())) {
             all.push({
                 market: 'Regional Mandi',
@@ -81,47 +58,9 @@ const getFallbackMarkets = (commodity) => {
 
     if (commodity) {
         const filtered = all.filter(m => m.commodity.toLowerCase() === commodity.toLowerCase());
-        return filtered.length > 0 ? filtered : all;
+        return filtered.length > 0 ? filtered : [all[0]]; // Always return something relevant if possible
     }
     return all;
-};
-
-// Database of major Indian regions and mandis with coordinates
-const MARKET_COORDINATES = {
-    // Tamil Nadu
-    'Chennai': { lat: 13.0827, lon: 80.2707 },
-    'Coimbatore': { lat: 11.0168, lon: 76.9558 },
-    'Madurai': { lat: 9.9252, lon: 78.1198 },
-    'Trichy': { lat: 10.7905, lon: 78.7047 },
-    'Salem': { lat: 11.6643, lon: 78.1460 },
-    // Andhra Pradesh
-    'Visakhapatnam': { lat: 17.6868, lon: 83.2185 },
-    'Vijayawada': { lat: 16.5062, lon: 80.6480 },
-    'Guntur': { lat: 16.3067, lon: 80.4365 },
-    'Nellore': { lat: 14.4426, lon: 79.9865 },
-    'Kurnool': { lat: 15.8281, lon: 78.0373 },
-    // Kerala
-    'Trivandrum': { lat: 8.5241, lon: 76.9366 },
-    'Kochi': { lat: 9.9312, lon: 76.2673 },
-    'Kozhikode': { lat: 11.2588, lon: 75.7804 },
-    'Thrissur': { lat: 10.5276, lon: 76.2144 },
-    // Odisha (Adding for accurate "Far Away" calculation)
-    'Karanjia': { lat: 21.9213, lon: 85.9723 },
-    'Mayurbhanj': { lat: 21.9351, lon: 86.7324 },
-    // More Tamil Nadu
-    'Erode': { lat: 11.3410, lon: 77.7172 },
-    'Tuticorin': { lat: 8.8053, lon: 78.1460 },
-    'Thanjavur': { lat: 10.7852, lon: 79.1378 },
-    // More Andhra Pradesh
-    'Tirupati': { lat: 13.6288, lon: 79.4192 },
-    'Anantapur': { lat: 14.6819, lon: 77.6006 },
-    // Others
-    'Nashik': { lat: 19.997, lon: 73.789 },
-    'Pune': { lat: 18.520, lon: 73.856 },
-    'Mumbai': { lat: 19.076, lon: 72.877 },
-    'Indore': { lat: 22.719, lon: 75.857 },
-    'Karnal': { lat: 29.686, lon: 76.990 },
-    'Azadpur': { lat: 28.707, lon: 77.181 }
 };
 
 // Real Haversine distance calculation
@@ -156,6 +95,6 @@ export const getMarketCoords = (record) => {
 
 // Travel expense calculation
 export const calculateTravelExpense = (distance) => {
-    const ratePerKm = 10; // 10 currency units per km
+    const ratePerKm = 10;
     return distance * ratePerKm;
 };
