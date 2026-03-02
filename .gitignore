@@ -28,3 +28,13 @@ dist-ssr
 *_report.json
 lint_results.json
 dist
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+.venv/
+.pytest_cache/
+*.egg-info/

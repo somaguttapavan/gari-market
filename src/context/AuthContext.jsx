@@ -1,25 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // Check if user is logged in on mount
+    const [user, setUser] = useState(() => {
         const storedUser = localStorage.getItem('agri_user');
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("AuthContext: Error parsing stored user", e);
-                localStorage.removeItem('agri_user');
-            }
-        }
-        setLoading(false);
-    }, []);
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
+    const [loading] = useState(false);
 
     const login = (userData) => {
         localStorage.setItem('agri_user', JSON.stringify(userData));

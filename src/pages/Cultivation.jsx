@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sprout, Youtube, BookOpen, MessageCircle } from 'lucide-react';
 import Chatbot from '../components/Chatbot';
+import SoilTester from '../components/SoilTester';
 import { motion } from 'framer-motion';
 import { useCultivation } from '../hooks/useCultivation';
 
@@ -21,37 +22,74 @@ const Cultivation = () => {
                             <Youtube color="#ff0000" /> <span>Featured Training Videos</span>
                         </h3>
                         <div className="video-list-container">
-                            {guides.map((guide, index) => (
-                                <motion.div
-                                    key={index}
-                                    whileHover={{ y: -2 }}
-                                    className="glass-card video-card"
-                                >
-                                    <div className="video-thumb">
-                                        <iframe
-                                            width="100%"
-                                            height="100%"
-                                            src={guide.videoUrl}
-                                            title={guide.title}
-                                            frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowFullScreen
-                                        ></iframe>
-                                    </div>
-                                    <div className="video-content">
-                                        <div className="tag-container">
-                                            {guide.tags.map(tag => (
-                                                <span key={tag} className="agri-tag">
-                                                    {tag.toUpperCase()}
-                                                </span>
-                                            ))}
+                            {guides.map((guide, index) => {
+                                // Extract video ID and build thumbnail + watch URLs
+                                const videoId = guide.videoUrl.split('/embed/')[1]?.split('?')[0];
+                                const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                                const thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+
+                                return (
+                                    <motion.div
+                                        key={index}
+                                        whileHover={{ y: -2 }}
+                                        className="glass-card video-card"
+                                    >
+                                        {/* Clickable thumbnail — opens YouTube in a new tab */}
+                                        <a
+                                            href={watchUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="video-thumb"
+                                            style={{ display: 'block', position: 'relative', cursor: 'pointer', textDecoration: 'none', overflow: 'hidden', borderRadius: '0.5rem 0.5rem 0 0' }}
+                                            aria-label={`Watch ${guide.title} on YouTube`}
+                                        >
+                                            <img
+                                                src={thumbUrl}
+                                                alt={guide.title}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                                loading="lazy"
+                                            />
+                                            {/* Play button overlay */}
+                                            <div style={{
+                                                position: 'absolute', inset: 0,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                background: 'rgba(0,0,0,0.25)',
+                                                transition: 'background 0.2s'
+                                            }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.45)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.25)'}
+                                            >
+                                                <div style={{
+                                                    width: 52, height: 52, borderRadius: '50%',
+                                                    background: '#ff0000', display: 'flex',
+                                                    alignItems: 'center', justifyContent: 'center',
+                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
+                                                }}>
+                                                    <svg viewBox="0 0 24 24" width="26" height="26" fill="white">
+                                                        <path d="M8 5v14l11-7z" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </a>
+                                        <div className="video-content">
+                                            <div className="tag-container">
+                                                {guide.tags.map(tag => (
+                                                    <span key={tag} className="agri-tag">
+                                                        {tag.toUpperCase()}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <h4>{guide.title}</h4>
+                                            <p>{guide.desc}</p>
                                         </div>
-                                        <h4>{guide.title}</h4>
-                                        <p>{guide.desc}</p>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                    </motion.div>
+                                );
+                            })}
                         </div>
+                    </section>
+
+                    <section>
+                        <SoilTester />
                     </section>
 
                     <section className="principles-section">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { fetchMarketPrices, calculateDistance, getMarketCoords, calculateTravelExpense } from '../services/marketService';
 
 const STATE_CAPITALS = {
@@ -31,7 +31,7 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
                     // Don't set error here to fail hard, just log or show partial?
                     // actually if fallbacks are returned, error might be set.
                 }
-            } catch (err) {
+            } catch {
                 if (isMounted) setError("Failed to load market data.");
             } finally {
                 if (isMounted) setLoading(false);
@@ -123,7 +123,7 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
                     if (error) setError(error); // Pass warning as error?
                     else setError(null);
                 }
-            } catch (e) {
+            } catch {
                 if (isMounted) setError("Failed.");
             } finally {
                 if (isMounted) setLoading(false);

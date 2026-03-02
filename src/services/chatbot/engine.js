@@ -1,4 +1,4 @@
-import { AGRI_KNOWLEDGE, FALLBACK_RESPONSE } from './rules';
+import { AGRI_KNOWLEDGE, FALLBACK_RESPONSE } from './rules.js';
 
 /**
  * Basic rule-based engine to find the best response for user input.

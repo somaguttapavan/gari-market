@@ -35,6 +35,13 @@ export default defineConfig({
   ],
   clearScreen: false,
   server: {
-    host: true
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 })

@@ -15,6 +15,7 @@ const LiveMarket = () => {
         address, setAddress,
         userState, setUserState,
         loading: geoLoading,
+        setLoading: setGeoLoading,
         error: geoError,
         setError: setGeoError,
         isNative
@@ -30,94 +31,98 @@ const LiveMarket = () => {
         manualState
     );
 
-    const requestGeolocation = React.useCallback(async (retryMode = 'HIGH_ACCURACY') => {
+    const requestGeolocation = React.useCallback(async (initialMode = 'HIGH_ACCURACY') => {
         if (!navigator.geolocation) {
-            setGeoError("Your browser doesn't support location services.");
-            setLocationChecked(true);
+            setTimeout(() => {
+                setGeoError("Your browser doesn't support location services.");
+                setLocationChecked(true);
+                setGeoLoading(false);
+            }, 0);
             return;
         }
 
         if (isNative) return;
 
-        // Reset error state on new request
-        if (retryMode === 'HIGH_ACCURACY') {
-            setGeoError(null);
-            setLocationChecked(false);
-        }
+        const attempt = async (retryMode) => {
+            // Reset error state on new request
+            if (retryMode === 'HIGH_ACCURACY') {
+                setGeoError(null);
+                setLocationChecked(false);
+            }
 
-        // Helper to handle success
-        const handleSuccess = (position) => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            setLocation({ lat, lon });
-            setLocationSource('BROWSER_GPS');
-            setLocationChecked(true);
-            setGeoError(null);
-        };
+            // Helper to handle success
+            const handleSuccess = (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                setLocation({ lat, lon });
+                setLocationSource('BROWSER_GPS');
+                setLocationChecked(true);
+                setGeoError(null);
+                setGeoLoading(false);
+            };
 
-        // Helper to handle IP fallback
-        const tryIpFallback = async () => {
-            console.log("GPS failed, trying IP fallback...");
-            try {
-                const response = await fetch('https://ipapi.co/json/');
-                const data = await response.json();
-                if (data.latitude && data.longitude) {
-                    setLocation({ lat: data.latitude, lon: data.longitude });
-                    setLocationSource('IP_GEOLOCATION');
-                    setAddress(`${data.city}, ${data.region}`);
-                    setUserState(data.region);
-                    setLocationChecked(true);
-                    setGeoError(null); // Clear any previous GPS errors
-                    return true;
+            // Helper to handle IP fallback
+            const tryIpFallback = async () => {
+                console.log("GPS failed, trying IP fallback...");
+                try {
+                    const response = await fetch('https://ipapi.co/json/');
+                    const data = await response.json();
+                    if (data.latitude && data.longitude) {
+                        setLocation({ lat: data.latitude, lon: data.longitude });
+                        setLocationSource('IP_GEOLOCATION');
+                        setAddress(`${data.city}, ${data.region}`);
+                        setUserState(data.region);
+                        setLocationChecked(true);
+                        setGeoError(null); // Clear any previous GPS errors
+                        return true;
+                    }
+                } catch (ipError) {
+                    console.error("IP Geolocator failed:", ipError);
+                    return false;
                 }
-            } catch (ipError) {
-                console.error("IP Geolocator failed:", ipError);
                 return false;
-            }
-            return false;
+            };
+
+            const handleFailure = async (err) => {
+                console.warn(`Geolocation attempt (${retryMode}) failed:`, err.message);
+
+                // If timed out or unavailable on high accuracy, try low accuracy
+                if (retryMode === 'HIGH_ACCURACY' && (err.code === 3 || err.code === 2)) {
+                    console.log("Retrying with low accuracy...");
+                    attempt('LOW_ACCURACY');
+                    return;
+                }
+
+                // If low accuracy also failed, or permission denied, try IP fallback
+                const ipSuccess = await tryIpFallback();
+                if (ipSuccess) return;
+
+                // If everything fails
+                setLocationChecked(true);
+                let msg = "Could not get your location.";
+                if (err.code === 1) {
+                    msg = "Location access was denied. We tried to guess your location from your IP but failed. Please select your state manually.";
+                } else if (err.code === 2) {
+                    msg = "Location is temporarily unavailable. Please select your state manually.";
+                } else if (err.code === 3) {
+                    msg = "Location request timed out. Please select your state manually.";
+                }
+                setGeoError(msg);
+                setGeoLoading(false);
+            };
+
+            const options = {
+                enableHighAccuracy: retryMode === 'HIGH_ACCURACY',
+                timeout: retryMode === 'HIGH_ACCURACY' ? 5000 : 10000, // 5s for high, 10s for low
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(handleSuccess, handleFailure, options);
         };
 
-        const handleFailure = async (err) => {
-            console.warn(`Geolocation attempt (${retryMode}) failed:`, err.message);
+        attempt(initialMode);
 
-            // If timed out or unavailable on high accuracy, try low accuracy
-            if (retryMode === 'HIGH_ACCURACY' && (err.code === 3 || err.code === 2)) {
-                console.log("Retrying with low accuracy...");
-                requestGeolocation('LOW_ACCURACY');
-                return;
-            }
-
-            // If low accuracy also failed, or permission denied, try IP fallback
-            // Don't try IP fallback if permission was explicitly denied (code 1) - debatable, but usually respectful.
-            // However, user wants it to work. Let's try IP fallback for everything except explicit denial if we want to be aggressive,
-            // but for "Permission denied" (1), the browser blocked it. IP lookup doesn't need browser permission (it's server side logic essentially).
-            // So we CAN try IP fallback even if geolocation is denied.
-
-            const ipSuccess = await tryIpFallback();
-            if (ipSuccess) return;
-
-            // If everything fails
-            setLocationChecked(true);
-            let msg = "Could not get your location.";
-            if (err.code === 1) {
-                msg = "Location access was denied. We tried to guess your location from your IP but failed. Please select your state manually.";
-            } else if (err.code === 2) {
-                msg = "Location is temporarily unavailable. Please select your state manually.";
-            } else if (err.code === 3) {
-                msg = "Location request timed out. Please select your state manually.";
-            }
-            setGeoError(msg);
-        };
-
-        const options = {
-            enableHighAccuracy: retryMode === 'HIGH_ACCURACY',
-            timeout: retryMode === 'HIGH_ACCURACY' ? 5000 : 10000, // 5s for high, 10s for low
-            maximumAge: 0
-        };
-
-        navigator.geolocation.getCurrentPosition(handleSuccess, handleFailure, options);
-
-    }, [isNative, setLocation, setLocationSource, setGeoError, setAddress, setUserState]);
+    }, [isNative, setLocation, setLocationSource, setGeoError, setAddress, setUserState, setGeoLoading]);
 
     useEffect(() => {
         if (!location && !locationChecked && !isNative && !geoLoading) {

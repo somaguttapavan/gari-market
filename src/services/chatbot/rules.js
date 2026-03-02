@@ -43,10 +43,6 @@ export const AGRI_KNOWLEDGE = [
 
     // 🍅 ORGANIC TOMATO
     {
-        keywords: ['land for tomato', 'drained soil'],
-        response: "Tomato Land Selection:\n1. Choose well-draining soil.\n2. Avoid waterlogged spots.\n3. Ensure full sunlight.\n4. Check soil pH.\n5. Remove old crop residues."
-    },
-    {
         keywords: ['tomato nursery', 'raised beds', 'tomato seed'],
         response: "Organic Tomato Nursery:\n1. Prepare raised beds.\n2. Mix soil + vermicompost.\n3. Treat seeds.\n4. Sow thinly.\n5. Water gently.\n6. Protect from pests."
     },
@@ -101,6 +97,10 @@ export const AGRI_KNOWLEDGE = [
     {
         keywords: ['intercrop', 'compatible'],
         response: "Organic Tomato Intercropping:\n1. Choose compatible crops.\n2. Maintain spacing.\n3. Monitor pests.\n4. Adjust irrigation."
+    },
+    {
+        keywords: ['land for tomato', 'drained soil', 'grow tomato', 'tomato'],
+        response: "Tomato Land Selection:\n1. Choose well-draining soil.\n2. Avoid waterlogged spots.\n3. Ensure full sunlight.\n4. Check soil pH.\n5. Remove old crop residues."
     },
 
     // 🥔 ORGANIC POTATO
@@ -327,7 +327,7 @@ export const AGRI_KNOWLEDGE = [
 
     // Standard greetings & general info
     {
-        keywords: ['hello', 'hi', 'namaste', 'hey'],
+        keywords: ['hello', 'namaste', 'greetings', 'hi'],
         response: "Namaste! I am your AgriGrowth Assistant, now trained with 80+ expert-verified guides (Organic Farming, Seasonal Crops, Pest Control & more). How can I help you today?"
     },
     {
