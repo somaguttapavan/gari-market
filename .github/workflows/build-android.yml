@@ -20,7 +20,7 @@ jobs:
           node-version: '20'
 
       - name: Install root dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build Web Frontend
         run: npm run build
