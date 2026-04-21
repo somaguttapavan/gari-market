@@ -37,7 +37,7 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
                     if (apiError) setError(apiError);
                     else setError(null);
                 }
-            } catch (err) {
+            } catch {
                 if (isMounted) setError("Failed to load market data.");
             } finally {
                 if (isMounted) {

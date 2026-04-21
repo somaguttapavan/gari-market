@@ -65,16 +65,20 @@ export const LocationProvider = ({ children }) => {
 
                     if (isDifferent) {
                         console.log("Syncing location to profile city:", normalizedCity);
-                        setLocation(cityCoords);
-                        setLocationSource('PROFILE_SYNC');
-                        setAddress(user.location);
-                        if (state) setUserState(state);
+                        setTimeout(() => {
+                            setLocation(cityCoords);
+                            setLocationSource('PROFILE_SYNC');
+                            setAddress(user.location);
+                            if (state) setUserState(state);
+                        }, 0);
                     }
                 }
             } else if (state && userState !== state && !isHighAccuracy) {
                 console.log("Syncing state to profile state:", state);
-                setUserState(state);
-                setAddress(user.location);
+                setTimeout(() => {
+                    setUserState(state);
+                    setAddress(user.location);
+                }, 0);
             }
         }
     }, [user, location, userState, locationSource]);
