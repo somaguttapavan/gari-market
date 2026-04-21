@@ -7,22 +7,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 
 // Dynamically resolve the host so this works even when the laptop IP changes
-const getAppUrl = () => {
-  // If we have a production EXPO_PUBLIC environment variable, use it.
-  if (process.env.EXPO_PUBLIC_APP_URL) {
-    return process.env.EXPO_PUBLIC_APP_URL;
-  }
-  // Try to get the host from Expo's manifest (works in Expo Go)
-  const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-  if (hostUri) {
-    const host = hostUri.split(':')[0]; // strip the metro port, keep only the IP
-    return `http://${host}:5173`;
-  }
-  // Fallback: use the current known IP
-  return 'http://10.142.54.77:5173';
-};
-
-const APP_URL = getAppUrl();
+const LOCAL_INDEX = require('./assets/www/index.html');
 
 export default function App() {
   const [error, setError] = useState(false);
@@ -147,17 +132,17 @@ export default function App() {
 
         {error ? (
           <View style={styles.errorArea}>
-            <Text style={styles.errorTitle}>Offline or Error</Text>
-            <Text style={styles.errorSub}>Could not reach the server at {APP_URL}</Text>
+            <Text style={styles.errorTitle}>Application Error</Text>
+            <Text style={styles.errorSub}>The bundled UI failed to initialize. Please check logs.</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}>
-              <Text style={styles.retryText}>Reconnect</Text>
+              <Text style={styles.retryText}>Reload</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.webContainer}>
             <WebView
               ref={webViewRef}
-              source={{ uri: APP_URL }}
+              source={LOCAL_INDEX}
               style={styles.webview}
               onError={(e) => {
                 console.log('WebView Error:', e.nativeEvent);

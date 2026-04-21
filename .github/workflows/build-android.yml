@@ -22,6 +22,14 @@ jobs:
       - name: Install root dependencies
         run: npm install
 
+      - name: Build Web Frontend
+        run: npm run build
+
+      - name: Bundle Web Assets into Mobile
+        run: |
+          mkdir -p mobile/assets/www
+          cp -r dist/* mobile/assets/www/
+
       - name: Install mobile dependencies
         run: |
           cd mobile
