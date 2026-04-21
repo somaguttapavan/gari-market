@@ -38,7 +38,7 @@ const Profile = () => {
                         </p>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                    <div className="profile-grid">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <div style={{ padding: '0.75rem', borderRadius: '0.5rem', backgroundColor: '#f1f5f9', color: 'var(--primary)' }}>
                                 <Mail size={20} />

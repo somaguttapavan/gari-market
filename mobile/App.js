@@ -6,7 +6,9 @@ import * as Location from 'expo-location';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 
-// Load the bundled web app from Android's assets folder
+// Configuration
+const LAPTOP_IP = '10.65.98.129';
+const DEV_URL = `http://${LAPTOP_IP}:5173`;
 const LOCAL_INDEX_URI = 'file:///android_asset/www/index.html';
 
 export default function App() {
@@ -14,7 +16,25 @@ export default function App() {
   const [userName, setUserName] = useState('Farmer');
   const [location, setLocation] = useState(null);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [loadUrl, setLoadUrl] = useState(LOCAL_INDEX_URI);
   const webViewRef = useRef(null);
+
+  // Connectivity check to choose between Dev and Prod
+  useEffect(() => {
+    const checkDevServer = async () => {
+      try {
+        const response = await fetch(DEV_URL, { method: 'HEAD' });
+        if (response.ok) {
+          console.log('Vite Dev Server detected! Loading live version...');
+          setLoadUrl(DEV_URL);
+        }
+      } catch (e) {
+        console.log('Dev server unreachable, using bundled assets.');
+        setLoadUrl(LOCAL_INDEX_URI);
+      }
+    };
+    checkDevServer();
+  }, []);
 
   useEffect(() => {
     let locationSubscription = null;
@@ -142,7 +162,7 @@ export default function App() {
           <View style={styles.webContainer}>
             <WebView
               ref={webViewRef}
-              source={{ uri: LOCAL_INDEX_URI }}
+              source={{ uri: loadUrl }}
               style={styles.webview}
               onError={(e) => {
                 console.log('WebView Error:', e.nativeEvent);

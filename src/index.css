@@ -238,6 +238,16 @@ textarea {
   .principles-grid {
     grid-template-columns: 1fr !important;
   }
+
+  /* Profile Specific Mobile Fixes */
+  .profile-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  .profile-item {
+    padding: 0.5rem 0 !important;
+  }
 }
 
 /* -------------------------------------------
@@ -270,6 +280,12 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
 }
 
 .cultivation-header {

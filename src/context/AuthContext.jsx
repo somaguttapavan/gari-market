@@ -18,9 +18,16 @@ export const AuthProvider = ({ children }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials)
             });
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Login failed');
+                let errorMsg = 'Login failed';
+                try {
+                    const error = await response.json();
+                    errorMsg = error.detail || errorMsg;
+                } catch (e) {
+                    errorMsg = `Server error (${response.status}): ${response.statusText}`;
+                }
+                throw new Error(errorMsg);
             }
             const userData = await response.json();
             localStorage.setItem('agri_user', JSON.stringify(userData));
@@ -44,9 +51,16 @@ export const AuthProvider = ({ children }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userData)
             });
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Registration failed');
+                let errorMsg = 'Registration failed';
+                try {
+                    const error = await response.json();
+                    errorMsg = error.detail || errorMsg;
+                } catch (e) {
+                    errorMsg = `Server error (${response.status}): ${response.statusText}`;
+                }
+                throw new Error(errorMsg);
             }
             return { success: true };
         } catch (err) {

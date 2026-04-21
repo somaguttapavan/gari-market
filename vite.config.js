@@ -1,12 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import legacy from '@vitejs/plugin-legacy'
 
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
   plugins: [
     react(),
+    legacy({
+      targets: ['defaults', 'not IE 11'],
+      polyfills: true
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'robots.txt', 'apple-touch-icon.png'],

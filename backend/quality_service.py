@@ -84,6 +84,15 @@ def analyze_tomato(img_array):
         subject_pixels = total_pixels
         subject_mask = np.ones_like(r, dtype=bool)
 
+    # FINAL SAFETY: If somehow still zero (e.g. empty image), return early
+    if subject_pixels == 0:
+        return {
+            "crop": "Tomato",
+            "quality": "Unknown",
+            "confidence": 0,
+            "advice": "Unable to detect subject in image. Please ensure good lighting."
+        }
+
     # Calculate "Redness" - where R is higher than G and B
     # Relaxed from 1.2 to 1.1 multiplier
     red_mask = (r > g * 1.1) & (r > b * 1.1) & (r > 50)

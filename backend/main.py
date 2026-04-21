@@ -15,13 +15,33 @@ except ImportError:
     from database import get_collection
     from quality_service import analyze_quality
 
-app = FastAPI(title="Agri-Growth Backend", version="1.0.0")
+# Configure FastAPI with relaxed settings
+app = FastAPI(
+    title="Agri-Growth Backend", 
+    version="1.0.0",
+)
 
-# Configure CORS
+# Custom 404 handler to ensure JSON response
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": f"Path '{request.url.path}' not found on Agri-Growth API. Verify your frontend API_BASE_URL."},
+    )
+
+# Logging Middleware to debug mobile connectivity
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"REQUEST: {request.method} {request.url.path} from {request.client.host}")
+    response = await call_next(request)
+    print(f"RESPONSE: {response.status_code}")
+    return response
+
+# Configure CORS - Broadened for mobile and local network access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
