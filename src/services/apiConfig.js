@@ -19,8 +19,8 @@ const getBaseUrl = () => {
         }
     }
 
-    // Default fallback
-    return 'http://localhost:8000';
+    // Default fallback for Mobile WebView and remote local devices
+    return 'http://10.65.98.129:8000';
 };
 
 export const API_BASE_URL = getBaseUrl();
