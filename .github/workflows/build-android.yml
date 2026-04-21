@@ -35,7 +35,9 @@ jobs:
 
       - name: Build Android Release APK
         run: |
-          cd mobile/android
+          cd mobile
+          npx expo prebuild -p android
+          cd android
           chmod +x ./gradlew
           ./gradlew assembleRelease
 
