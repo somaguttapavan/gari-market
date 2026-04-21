@@ -6,8 +6,8 @@ import * as Location from 'expo-location';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 
-// Dynamically resolve the host so this works even when the laptop IP changes
-const LOCAL_INDEX = require('./assets/www/index.html');
+// Load the bundled web app from Android's assets folder
+const LOCAL_INDEX_URI = 'file:///android_asset/www/index.html';
 
 export default function App() {
   const [error, setError] = useState(false);
@@ -142,7 +142,7 @@ export default function App() {
           <View style={styles.webContainer}>
             <WebView
               ref={webViewRef}
-              source={LOCAL_INDEX}
+              source={{ uri: LOCAL_INDEX_URI }}
               style={styles.webview}
               onError={(e) => {
                 console.log('WebView Error:', e.nativeEvent);
