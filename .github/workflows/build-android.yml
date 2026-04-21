@@ -48,8 +48,15 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleRelease --stacktrace
 
+      - name: Create Password Protected ZIP
+        run: |
+          sudo apt-get install -y zip
+          cd mobile/android/app/build/outputs/apk/release/
+          zip -P agrigrowth -r ../../../../../../../AgriGrowth_Resilient.zip app-release.apk
+          mv ../../../../../../../AgriGrowth_Resilient.zip $GITHUB_WORKSPACE/
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          name: app-release-zip
+          path: AgriGrowth_Resilient.zip
