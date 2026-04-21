@@ -63,21 +63,40 @@ const LiveMarket = () => {
 
             // Helper to handle IP fallback
             const tryIpFallback = async () => {
-                console.log("GPS failed, trying IP fallback...");
+                console.log("GPS failed, trying primary IP fallback...");
                 try {
+                    // Try ipapi.co (Primary)
                     const response = await fetch('https://ipapi.co/json/');
-                    const data = await response.json();
-                    if (data.latitude && data.longitude) {
-                        setLocation({ lat: data.latitude, lon: data.longitude });
-                        setLocationSource('IP_GEOLOCATION');
-                        setAddress(`${data.city}, ${data.region}`);
-                        setUserState(data.region);
-                        setLocationChecked(true);
-                        setGeoError(null); // Clear any previous GPS errors
-                        return true;
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.latitude && data.longitude) {
+                            setLocation({ lat: data.latitude, lon: data.longitude });
+                            setLocationSource('IP_GEOLOCATION');
+                            setAddress(`${data.city}, ${data.region}`);
+                            setUserState(data.region);
+                            setLocationChecked(true);
+                            setGeoError(null);
+                            return true;
+                        }
+                    }
+
+                    // Try ip-api.com (Secondary) if primary failed
+                    console.log("Primary IP fallback failed, trying secondary...");
+                    const res2 = await fetch('http://ip-api.com/json/');
+                    if (res2.ok) {
+                        const d2 = await res2.json();
+                        if (d2.lat && d2.lon) {
+                            setLocation({ lat: d2.lat, lon: d2.lon });
+                            setLocationSource('IP_GEOLOCATION');
+                            setAddress(`${d2.city}, ${d2.regionName}`);
+                            setUserState(d2.regionName);
+                            setLocationChecked(true);
+                            setGeoError(null);
+                            return true;
+                        }
                     }
                 } catch (ipError) {
-                    console.error("IP Geolocator failed:", ipError);
+                    console.error("All IP Geolocation methods failed:", ipError);
                     return false;
                 }
                 return false;
@@ -232,7 +251,7 @@ const LiveMarket = () => {
             {isLoading ? (
                 <div style={{ textAlign: 'center', padding: '4rem' }}>
                     <div className="animate-spin" style={{ width: '40px', height: '40px', border: '4px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto' }}></div>
-                    <p style={{ marginTop: '1rem', color: 'var(--text-light)' }}>{geoLoading ? "Identifying your location..." : "Fetching latest prices..."}</p>
+                    <p style={{ marginTop: '1rem', color: 'var(--text-light)' }}>{geoLoading ? "Loading Location..." : "Syncing Market Prices..."}</p>
                 </div>
             ) : (
                 <div style={{

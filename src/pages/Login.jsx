@@ -9,21 +9,22 @@ const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        setIsLoading(true);
 
-        // Get registered user data to simulate a real login
-        const registeredData = JSON.parse(localStorage.getItem('agri_user_data') || '{}');
-        const loginName = registeredData.fullName || 'Farmer';
-        const loginLocation = registeredData.location || 'India';
+        const result = await login(formData);
 
-        login({
-            id: 1,
-            name: loginName,
-            email: formData.email,
-            location: loginLocation
-        });
-        navigate('/');
+        if (result.success) {
+            navigate('/');
+        } else {
+            setError(result.error || 'Invalid email or password');
+        }
+        setIsLoading(false);
     };
 
     const handleChange = (e) => {
@@ -51,6 +52,20 @@ const Login = () => {
                     <p style={{ color: 'var(--text-light)' }}>Access your farming dashboard</p>
                 </div>
 
+                {error && (
+                    <div style={{
+                        padding: '0.75rem',
+                        backgroundColor: '#fee2e2',
+                        color: '#b91c1c',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1.5rem',
+                        fontSize: '0.875rem',
+                        textAlign: 'center'
+                    }}>
+                        {error}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Email Address</label>
@@ -73,9 +88,18 @@ const Login = () => {
                         />
                     </div>
 
-                    <button type="submit" className="btn-primary" style={{ marginTop: '1rem', justifyContent: 'center' }}>
-                        <LogIn size={18} />
-                        Sign In
+                    <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={isLoading}
+                        style={{ marginTop: '1rem', justifyContent: 'center', opacity: isLoading ? 0.7 : 1 }}
+                    >
+                        {isLoading ? 'Signing In...' : (
+                            <>
+                                <LogIn size={18} />
+                                Sign In
+                            </>
+                        )}
                     </button>
                 </form>
 

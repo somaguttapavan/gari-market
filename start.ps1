@@ -14,14 +14,28 @@ $backendJob = Start-Job -ScriptBlock {
     & python backend/main.py
 }
 
-# Give it 2 seconds to boot
-Start-Sleep -Seconds 2
+# Give it 5 seconds to boot, checking repeatedly against the health check endpoint
+$retryCount = 0
+$backendReady = $false
+while ($retryCount -lt 10) {
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:8000" -UseBasicParsing -ErrorAction Stop
+        if ($response.StatusCode -eq 200) {
+            $backendReady = $true
+            break
+        }
+    }
+    catch {
+        # Silent fail, just wait and retry
+    }
+    Start-Sleep -Seconds 1
+    $retryCount++
+}
 
-# Check if backend started successfully
-$test = (Invoke-WebRequest -Uri "http://localhost:8000" -UseBasicParsing -ErrorAction SilentlyContinue).StatusCode
-if ($test -ne 200) {
+if (-not $backendReady) {
     Write-Host "WARNING: Backend may not be ready yet. Starting frontend anyway..." -ForegroundColor Yellow
-} else {
+}
+else {
     Write-Host "Backend is running!" -ForegroundColor Green
 }
 

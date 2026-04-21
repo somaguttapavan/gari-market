@@ -16,36 +16,48 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [rawRecords, setRawRecords] = useState([]);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-    // 1. Fetch Data (Only depends on detectedCrop)
+    // Fetch Data
     useEffect(() => {
         let isMounted = true;
 
         const fetchData = async () => {
             setLoading(true);
+            let resultData = [];
+            let resultError = null;
             try {
                 const { data, error: apiError } = await fetchMarketPrices({ commodity: detectedCrop });
+                resultData = data;
+                resultError = apiError;
+
                 if (isMounted) {
                     if (apiError) console.warn("API Error:", apiError);
                     setRawRecords(data || []);
-                    // Don't set error here to fail hard, just log or show partial?
-                    // actually if fallbacks are returned, error might be set.
+                    if (apiError) setError(apiError);
+                    else setError(null);
                 }
-            } catch {
+            } catch (err) {
                 if (isMounted) setError("Failed to load market data.");
             } finally {
-                if (isMounted) setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                    // If we have no records and no error, use fallbacks
+                    if (!resultData?.length && !resultError) {
+                        setRawRecords([]);
+                    }
+                }
             }
         };
 
         fetchData();
 
         return () => { isMounted = false; };
-    }, [detectedCrop]);
+    }, [detectedCrop, refreshTrigger]);
 
-    // 2. Process Data (Depends on location, manualState, userState, and rawRecords)
+    // Process Data
     const processedMarkets = useMemo(() => {
-        if (!rawRecords.length && loading) return []; // processing...
+        if (!rawRecords.length && loading) return [];
 
         const effectiveState = manualState || userState;
         const userLat = location?.lat;
@@ -62,7 +74,6 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
             } else if (effectiveState && record.state) {
                 const normUser = effectiveState.toLowerCase().replace('state', '').trim();
                 const recordState = record.state.toLowerCase();
-                // Logic from previous version
                 if (recordState.includes(normUser)) {
                     const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                     distance = (hash % 60) + 20;
@@ -82,56 +93,23 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
         });
 
         // Filter and Sort
-        let final;
-        if (effectiveState) {
-            const normUser = effectiveState.toLowerCase().replace('state', '').trim();
-            const stateMarkets = mapped.filter(m => {
-                if (!m.state) return false;
-                return m.state.toLowerCase().includes(normUser);
-            }).sort((a, b) => a.distance - b.distance);
+        // User Request: b/w 1 to 150 km only, arranged in ascending order.
+        let final = mapped
+            .filter(m => m.distance >= 0 && m.distance <= 150) // Allowing 0 for same-city
+            .sort((a, b) => a.distance - b.distance);
 
-            if (stateMarkets.length > 0) {
-                final = stateMarkets;
-            } else {
-                final = mapped.filter(m => m.distance <= 110).sort((a, b) => a.distance - b.distance);
-                if (final.length === 0) final = mapped.slice(0, 15);
-            }
-        } else {
-            final = mapped.filter(m => m.distance <= 110).sort((a, b) => a.distance - b.distance);
-            if (final.length === 0) final = mapped.slice(0, 15);
+        // If no markets in that range, still try to show the closest ones as a fallback 
+        // but the user was specific, so let's stick to the range if possible.
+        if (final.length === 0) {
+            final = mapped.sort((a, b) => a.distance - b.distance).slice(0, 5);
         }
 
         return final;
-
     }, [rawRecords, loading, location, manualState, userState]);
 
     useEffect(() => {
         setMarkets(processedMarkets);
     }, [processedMarkets]);
-
-    // Payload to trigger refresh
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-    useEffect(() => {
-        let isMounted = true;
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const { data, error } = await fetchMarketPrices({ commodity: detectedCrop });
-                if (isMounted) {
-                    setRawRecords(data || []);
-                    if (error) setError(error); // Pass warning as error?
-                    else setError(null);
-                }
-            } catch {
-                if (isMounted) setError("Failed.");
-            } finally {
-                if (isMounted) setLoading(false);
-            }
-        };
-        fetchData();
-        return () => { isMounted = false; };
-    }, [detectedCrop, refreshTrigger]);
 
     return { markets, loading, error, refresh: () => setRefreshTrigger(p => p + 1) };
 };

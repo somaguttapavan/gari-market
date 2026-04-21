@@ -10,11 +10,14 @@ const BASE_URL = 'https://api.data.gov.in/resource';
  * Returns { data, error }
  */
 export const fetchMarketPrices = async (params = {}) => {
+    let apiRecords = [];
+    let apiError = null;
+
     try {
         const queryParams = {
             'api-key': API_KEY,
             format: 'json',
-            limit: 100
+            limit: 500 // Increased for better regional coverage
         };
 
         if (params.commodity) {
@@ -23,21 +26,31 @@ export const fetchMarketPrices = async (params = {}) => {
 
         const response = await axios.get(`${BASE_URL}/${RESOURCE_ID}`, {
             params: queryParams,
-            timeout: 5000 // 5 seconds timeout
+            timeout: 8000 // 8 seconds timeout
         });
 
-        if (response.data && response.data.records && response.data.records.length > 0) {
-            return { data: response.data.records, error: null };
+        if (response.data && response.data.records) {
+            apiRecords = response.data.records;
         }
-
-        return { data: getFallbackMarkets(params.commodity), error: null };
     } catch (error) {
         console.error('Error fetching market prices:', error);
-        return {
-            data: getFallbackMarkets(params.commodity),
-            error: error.code === 'ECONNABORTED' ? 'Market server is slow. Showing offline data.' : 'Network error. Showing offline data.'
-        };
+        apiError = error.code === 'ECONNABORTED' ? 'Market server is slow. Showing offline data.' : 'Network error. Showing offline data.';
     }
+
+    // Always merge with fallbacks for better coverage in major cities
+    const fallbackRecords = getFallbackMarkets(params.commodity);
+
+    // De-duplicate: If a market exists in both, prefer API record but keep fallbacks that are missing
+    const combined = [...apiRecords];
+    fallbackRecords.forEach(fb => {
+        const exists = apiRecords.some(api =>
+            api.market.toLowerCase() === fb.market.toLowerCase() &&
+            api.commodity.toLowerCase() === fb.commodity.toLowerCase()
+        );
+        if (!exists) combined.push(fb);
+    });
+
+    return { data: combined, error: apiError };
 };
 
 const getFallbackMarkets = (commodity) => {
@@ -84,8 +97,12 @@ export const getMarketCoords = (record) => {
 
     for (const term of searchTerms) {
         if (!term) continue;
+        const normalizedTerm = term.toLowerCase().trim();
         for (const key in MARKET_COORDINATES) {
-            if (term.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(term.toLowerCase())) {
+            const normalizedKey = key.toLowerCase();
+            if (normalizedTerm.includes(normalizedKey) || normalizedKey.includes(normalizedTerm) ||
+                (normalizedTerm.startsWith('banglor') && normalizedKey.startsWith('bangalore')) ||
+                (normalizedTerm.startsWith('hyd') && normalizedKey.startsWith('hyderabad'))) {
                 return MARKET_COORDINATES[key];
             }
         }

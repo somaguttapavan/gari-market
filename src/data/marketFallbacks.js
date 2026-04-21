@@ -78,6 +78,16 @@ export const MARKET_COORDINATES = {
     'Kochi': { lat: 9.9312, lon: 76.2673 },
     'Kozhikode': { lat: 11.2588, lon: 75.7804 },
     'Thrissur': { lat: 10.5276, lon: 76.2144 },
+    // Karnataka
+    'Bangalore': { lat: 12.9716, lon: 77.5946 },
+    'Bengaluru': { lat: 12.9716, lon: 77.5946 },
+    'Mysore': { lat: 12.2958, lon: 76.6394 },
+    'Hubli': { lat: 15.3647, lon: 75.1240 },
+    'Belgaum': { lat: 15.8497, lon: 74.4977 },
+    'Mangalore': { lat: 12.9141, lon: 74.8560 },
+    // Telangana
+    'Hyderabad': { lat: 17.3850, lon: 78.4867 },
+    'Warangal': { lat: 17.9689, lon: 79.5941 },
     // Odisha
     'Karanjia': { lat: 21.9213, lon: 85.9723 },
     'Mayurbhanj': { lat: 21.9351, lon: 86.7324 },

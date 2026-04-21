@@ -1,5 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { MARKET_COORDINATES } from '../data/marketFallbacks';
 
 const LocationContext = createContext();
 
@@ -11,7 +13,7 @@ export const LocationProvider = ({ children }) => {
     const [locationSource, setLocationSource] = useState(() => localStorage.getItem('agri_location_source'));
     const [address, setAddress] = useState(() => localStorage.getItem('agri_address'));
     const [userState, setUserState] = useState(() => localStorage.getItem('agri_user_state'));
-    const [loading, setLoading] = useState(!location);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isNative] = useState(() => {
         return !!window.ReactNativeWebView || /wv|WebView/i.test(navigator.userAgent);
@@ -31,6 +33,51 @@ export const LocationProvider = ({ children }) => {
             localStorage.setItem('agri_user_state', userState);
         }
     }, [location, locationSource, address, userState]);
+
+    const { user } = useAuth();
+
+    // Sync with User Profile
+    useEffect(() => {
+        if (user && user.location) {
+            const parts = user.location.split(',').map(p => p.trim());
+            const city = parts[0]?.toLowerCase() || '';
+            const state = parts[parts.length - 1];
+
+            // Fuzzy/Alias matching for major cities
+            const normalizedCity = Object.keys(MARKET_COORDINATES).find(key => {
+                const k = key.toLowerCase();
+                return k === city ||
+                    (city.startsWith('banglor') && k.startsWith('bangalore')) ||
+                    (city.startsWith('mumbai') && k.startsWith('mumbai')) ||
+                    (city.startsWith('hyd') && k.startsWith('hyderabad'));
+            });
+
+            // Sync Logic: Only sync if we have no location OR if current location is non-GPS (Sync/IP)
+            const isHighAccuracy = locationSource === 'NATIVE_GPS' || locationSource === 'BROWSER_GPS';
+
+            if (normalizedCity) {
+                const cityCoords = MARKET_COORDINATES[normalizedCity];
+                // Only override if not already on high-accuracy GPS
+                if (!location || !isHighAccuracy) {
+                    const isDifferent = !location ||
+                        Math.abs(location.lat - cityCoords.lat) > 0.1 ||
+                        Math.abs(location.lon - cityCoords.lon) > 0.1;
+
+                    if (isDifferent) {
+                        console.log("Syncing location to profile city:", normalizedCity);
+                        setLocation(cityCoords);
+                        setLocationSource('PROFILE_SYNC');
+                        setAddress(user.location);
+                        if (state) setUserState(state);
+                    }
+                }
+            } else if (state && userState !== state && !isHighAccuracy) {
+                console.log("Syncing state to profile state:", state);
+                setUserState(state);
+                setAddress(user.location);
+            }
+        }
+    }, [user, location, userState, locationSource]);
 
     useEffect(() => {
 

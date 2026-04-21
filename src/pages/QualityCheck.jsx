@@ -90,30 +90,24 @@ const QualityCheck = () => {
                         </div>
                     ) : (
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <div style={{ position: 'relative', width: '100%', height: '400px', borderRadius: '1rem', overflow: 'hidden' }}>
+                            <div style={{ position: 'relative', width: '100%', height: window.innerWidth < 768 ? '250px' : '400px', borderRadius: '1rem', overflow: 'hidden' }}>
                                 <img src={selectedImage} alt="Crop" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                {!result && !error && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        backgroundColor: 'rgba(0,0,0,0.3)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <button onClick={runAnalysis} className="btn-primary" disabled={isAnalyzing}>
-                                            {isAnalyzing ? (
-                                                <>Analyzing...</>
-                                            ) : (
-                                                <><Search size={20} /> Check Quality</>
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
                             </div>
+
+                            {!result && !error && (
+                                <button
+                                    onClick={runAnalysis}
+                                    className="btn-primary"
+                                    disabled={isAnalyzing}
+                                    style={{ width: '100%', padding: '1rem', height: '56px', fontSize: '1.1rem' }}
+                                >
+                                    {isAnalyzing ? (
+                                        <>Analyzing...</>
+                                    ) : (
+                                        <><Search size={20} /> Check Quality</>
+                                    )}
+                                </button>
+                            )}
 
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <button

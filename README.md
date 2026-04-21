@@ -169,6 +169,28 @@ anti-project/
 
 ---
 
+## 🌐 Deployment & Publishing
+
+This project is configured for automated cloud deployment across its three components. No code changes are required for production!
+
+### Web Frontend (Vercel)
+The root directory includes a `vercel.json` SPA configuration and `.env.production` file.
+1. Connect this repo to [Vercel](https://vercel.com).
+2. Ensure you have the `VITE_API_URL` environment variable properly pointing to your live backend.
+
+### Backend API (Render.com)
+The root directory includes a `render.yaml` infrastructure-as-code file.
+1. Connect this repo to [Render](https://render.com) by selecting "Blueprint" dashboard.
+2. The server will detect the YAML, install Python requirements, and deploy the `uvicorn` instance instantaneously.
+
+### Mobile App (Expo EAS)
+The `mobile/` directory contains `eas.json` for cloud builds.
+1. Have Expo EAS CLI installed globally (`npm install -g eas-cli`).
+2. Generate an APK or IPA via the command prompt: `eas build -p android`.
+3. Set your production frontend URL within `mobile/.env.production`.
+
+---
+
 ## 🏷️ Technology Stack
 
 | Layer | Technology |

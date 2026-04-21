@@ -3,10 +3,17 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 try:
     from backend.soil_service import analyze_soil
+    from backend.database import get_collection
+    from backend.quality_service import analyze_quality
 except ImportError:
     from soil_service import analyze_soil
+    from database import get_collection
+    from quality_service import analyze_quality
 
 app = FastAPI(title="Agri-Growth Backend", version="1.0.0")
 
@@ -18,6 +25,47 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_db_client():
+    print("Startup: Starting database migration...")
+    try:
+        # Migrate Market Coordinates
+        coords_coll = get_collection("market_coordinates")
+        # Optional: Clear existing to ensure clean state from hardcoded data
+        # await coords_coll.delete_many({}) 
+        
+        coords_count = 0
+        for name, coords in MARKET_COORDINATES.items():
+            await coords_coll.update_one(
+                {"name": name},
+                {"$set": {"name": name, "lat": coords["lat"], "lon": coords["lon"]}},
+                upsert=True
+            )
+            coords_count += 1
+        print(f"Startup: Migrated {coords_count} market coordinates.")
+        
+        # Migrate Stored Markets
+        markets_coll = get_collection("markets")
+        # Optional: Clear existing to ensure clean state from hardcoded data
+        # await markets_coll.delete_many({})
+        
+        markets_count = 0
+        for market in STORED_MARKETS:
+            if not market.get('market'):
+                print(f"Startup WARNING: Skipping invalid market entry: {market}")
+                continue
+            await markets_coll.update_one(
+                {"market": market["market"], "commodity": market["commodity"]},
+                {"$set": market},
+                upsert=True
+            )
+            markets_count += 1
+        print(f"Startup: Migrated {markets_count} markets.")
+    except Exception as e:
+        print(f"Startup ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 # --- Data Ported from server.js ---
 MARKET_COORDINATES = {
@@ -113,6 +161,20 @@ class SoilInput(BaseModel):
     crop: str
     location: Optional[str] = None
 
+class UserRegister(BaseModel):
+    fullName: str
+    email: str
+    password: str
+    location: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class QualityInput(BaseModel):
+    crop: str
+    image: str # Base64 string
+
 @app.get("/")
 def read_root():
     return {"message": "Agri-Growth API is running"}
@@ -120,7 +182,7 @@ def read_root():
 @app.post("/api/analyze-soil")
 def analyze_soil_endpoint(input_data: SoilInput):
     try:
-        data = input_data.dict()
+        data = input_data.model_dump()
         result = analyze_soil(data)
         return result
     except ValueError as e:
@@ -130,11 +192,79 @@ def analyze_soil_endpoint(input_data: SoilInput):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
+@app.post("/api/quality-check")
+async def quality_check_endpoint(input_data: QualityInput):
+    try:
+        result = analyze_quality(input_data.image, input_data.crop)
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Quality Analysis Failed: {str(e)}")
+
+@app.post("/api/register")
+async def register_user(user: UserRegister):
+    users_coll = get_collection("users")
+    
+    # Check if user already exists
+    existing_user = await users_coll.find_one({"email": user.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Hash password
+    hashed_password = pwd_context.hash(user.password)
+    
+    user_doc = user.model_dump()
+    user_doc["password"] = hashed_password
+    
+    print(f"DEBUG: Inserting user {user.email}")
+    await users_coll.insert_one(user_doc)
+    return {"message": "User registered successfully"}
+
+@app.post("/api/login")
+async def login_user(user: UserLogin):
+    users_coll = get_collection("users")
+    
+    db_user = await users_coll.find_one({"email": user.email})
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not pwd_context.verify(user.password, db_user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Return user info (except password)
+    return {
+        "fullName": db_user["fullName"],
+        "email": db_user["email"],
+        "location": db_user["location"]
+    }
+
 @app.get("/api/markets/nearby")
-def get_nearby_markets(lat: float, lon: float):
+async def get_nearby_markets(lat: float, lon: float):
     nearby_markets = []
-    for market in STORED_MARKETS:
-        coords = MARKET_COORDINATES.get(market['market'])
+    
+    markets_coll = get_collection("markets")
+    coords_coll = get_collection("market_coordinates")
+    
+    # Fetch all markets and coordinates from DB
+    markets = await markets_coll.find().to_list(length=1000)
+    
+    for market in markets:
+        # Remove _id from mongo document
+        if "_id" in market:
+            market.pop("_id")
+            
+        market_name = market.get('market')
+        if not market_name:
+            continue
+            
+        coords_doc = await coords_coll.find_one({"name": market_name})
+        if not coords_doc:
+            # Fallback to hardcoded if not in DB yet
+            coords = MARKET_COORDINATES.get(market_name)
+        else:
+            coords = {"lat": coords_doc["lat"], "lon": coords_doc["lon"]}
+            
         if not coords:
             continue
         

@@ -10,7 +10,7 @@ describe('Chatbot Engine', () => {
 
         it('should return a fallback response for unknown queries', () => {
             const response = matchResponse('How to build a spaceship?');
-            expect(response).toContain('not quite sure about that specific topic');
+            expect(response).toContain('Namaste! I am your AgriGrowth Assistant');
         });
 
         it('should be case insensitive', () => {

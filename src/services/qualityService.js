@@ -1,34 +1,33 @@
 /**
- * Simulates AI-based crop quality analysis.
- * Returns { data, error }
+ * Real AI-based crop quality analysis via backend.
  */
-export const analyzeCropQuality = async (crop, _image) => {
-    return new Promise((resolve) => {
-        // Simulate AI processing delay
-        setTimeout(() => {
-            // Logic: 10% chance it's the "wrong picture"
-            const randomCheck = Math.random();
-            if (randomCheck < 0.1) {
-                resolve({
-                    data: null,
-                    error: `Invalid Image: We couldn't detect ${crop} in this picture. It looks like you provided a different image.`
-                });
-                return;
-            }
+import { API_BASE_URL } from './apiConfig';
 
-            const isGoodQuality = Math.random() > 0.3; // 70% chance of good quality
+export const analyzeCropQuality = async (crop, image) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/quality-check`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                crop: crop,
+                image: image // Base64 string from FileReader
+            })
+        });
 
-            resolve({
-                data: {
-                    crop: crop,
-                    quality: isGoodQuality ? 'Good' : 'Bad',
-                    confidence: (Math.random() * 15 + 85).toFixed(2), // 85-100%
-                    advice: isGoodQuality
-                        ? `Your ${crop} looks healthy and ready for market! We recommend selling it soon for the best price.`
-                        : `We detected some signs of stress in your ${crop}. You might want to consult our Chatbot for treatment advice before selling.`
-                },
-                error: null
-            });
-        }, 2000);
-    });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to analyze quality');
+        }
+
+        const data = await response.json();
+        return { data, error: null };
+    } catch (error) {
+        console.error('Quality Analysis Error:', error);
+        return {
+            data: null,
+            error: error.message || 'The server is currently unavailable. Please try again later.'
+        };
+    }
 };

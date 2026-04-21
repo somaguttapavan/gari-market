@@ -12,17 +12,28 @@ const Register = () => {
         location: ''
     });
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
     const { register } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        register(formData);
-        setIsSuccess(true);
-        // After 2 seconds, redirect to login
-        setTimeout(() => {
-            navigate('/login');
-        }, 2500);
+        setError('');
+        setIsLoading(true);
+
+        const result = await register(formData);
+
+        if (result.success) {
+            setIsSuccess(true);
+            // After 2 seconds, redirect to login
+            setTimeout(() => {
+                navigate('/login');
+            }, 2500);
+        } else {
+            setError(result.error || 'Registration failed. Please try again.');
+        }
+        setIsLoading(false);
     };
 
     const handleChange = (e) => {
@@ -53,6 +64,20 @@ const Register = () => {
                             <h2 style={{ fontSize: '2rem', color: 'var(--primary-dark)' }}>Join AgriGrowth</h2>
                             <p style={{ color: 'var(--text-light)' }}>Empower your farming journey</p>
                         </div>
+
+                        {error && (
+                            <div style={{
+                                padding: '0.75rem',
+                                backgroundColor: '#fee2e2',
+                                color: '#b91c1c',
+                                borderRadius: '0.5rem',
+                                marginBottom: '1.5rem',
+                                fontSize: '0.875rem',
+                                textAlign: 'center'
+                            }}>
+                                {error}
+                            </div>
+                        )}
 
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <div>
@@ -97,8 +122,13 @@ const Register = () => {
                                 />
                             </div>
 
-                            <button type="submit" className="btn-primary" style={{ marginTop: '1rem', justifyContent: 'center' }}>
-                                Create Account
+                            <button
+                                type="submit"
+                                className="btn-primary"
+                                disabled={isLoading}
+                                style={{ marginTop: '1rem', justifyContent: 'center', opacity: isLoading ? 0.7 : 1 }}
+                            >
+                                {isLoading ? 'Creating Account...' : 'Create Account'}
                             </button>
                         </form>
 
