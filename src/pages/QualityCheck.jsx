@@ -1,10 +1,19 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, CheckCircle, AlertTriangle, ArrowRight, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQualityCheck } from '../hooks/useQualityCheck';
-
 import { CROPS } from '../data/crops';
+
+const useWindowWidth = () => {
+    const [width, setWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const onResize = () => setWidth(window.innerWidth);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+    return width;
+};
 
 const QualityCheck = () => {
     const {
@@ -21,6 +30,7 @@ const QualityCheck = () => {
 
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
+    const windowWidth = useWindowWidth();
 
     return (
         <div className="container" style={{ padding: '2rem 0' }}>
@@ -90,7 +100,7 @@ const QualityCheck = () => {
                         </div>
                     ) : (
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <div style={{ position: 'relative', width: '100%', height: window.innerWidth < 768 ? '250px' : '400px', borderRadius: '1rem', overflow: 'hidden' }}>
+                            <div style={{ position: 'relative', width: '100%', height: windowWidth < 768 ? '250px' : '400px', borderRadius: '1rem', overflow: 'hidden' }}>
                                 <img src={selectedImage} alt="Crop" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
 

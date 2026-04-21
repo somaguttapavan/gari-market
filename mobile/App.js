@@ -155,6 +155,9 @@ export default function App() {
               javaScriptEnabled={true}
               domStorageEnabled={true}
               allowsBackForwardNavigationGestures={true}
+              allowUniversalAccessFromFileURLs={true}
+              mixedContentMode="always"
+              originWhitelist={['*']}
               injectedJavaScript={`
                 (function() {
                   setInterval(() => {

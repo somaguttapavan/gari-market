@@ -5,9 +5,20 @@ import { useLocation } from '../context/LocationContext';
 import { useNearbyMarkets } from '../hooks/useNearbyMarkets';
 import { motion } from 'framer-motion';
 
+const useWindowWidth = () => {
+    const [width, setWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const onResize = () => setWidth(window.innerWidth);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+    return width;
+};
+
 const LiveMarket = () => {
     const [searchParams] = useSearchParams();
     const detectedCrop = searchParams.get('crop');
+    const windowWidth = useWindowWidth();
 
     const {
         location, setLocation,
@@ -169,16 +180,16 @@ const LiveMarket = () => {
         <div className="container" style={{ padding: '2rem 0' }}>
             <header style={{ marginBottom: '2rem' }}>
                 <h2 style={{
-                    fontSize: window.innerWidth < 768 ? '1.8rem' : '2.5rem',
+                    fontSize: windowWidth < 768 ? '1.8rem' : '2.5rem',
                     color: 'var(--primary-dark)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.75rem',
                     flexWrap: 'wrap'
                 }}>
-                    <TrendingUp size={window.innerWidth < 768 ? 28 : 36} /> Live Market Prices
+                    <TrendingUp size={windowWidth < 768 ? 28 : 36} /> Live Market Prices
                 </h2>
-                <p style={{ color: 'var(--text-light)', fontSize: window.innerWidth < 768 ? '0.95rem' : '1.1rem' }}>
+                <p style={{ color: 'var(--text-light)', fontSize: windowWidth < 768 ? '0.95rem' : '1.1rem' }}>
                     Real-time wholesale prices from markets near you.
                 </p>
 
