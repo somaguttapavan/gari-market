@@ -1,8 +1,10 @@
 /**
  * Dynamically determines the API Base URL.
- * When running in a browser (on laptop or mobile), 'window.location.hostname' 
- * points to the laptop's IP address.
+ * - Local dev: uses localhost:8000 (via Vite proxy or direct)
+ * - Production (Vercel/APK): uses the deployed Render backend
  */
+const PRODUCTION_API = 'https://gari-market-backend.onrender.com';
+
 const getBaseUrl = () => {
     // If environment variable is injected by Vite, use it!
     if (import.meta.env && import.meta.env.VITE_API_URL) {
@@ -19,8 +21,9 @@ const getBaseUrl = () => {
         }
     }
 
-    // Default fallback for Mobile WebView and remote local devices
-    return 'http://10.221.48.129:8000';
+    // Production: use the deployed Render backend
+    return PRODUCTION_API;
 };
 
 export const API_BASE_URL = getBaseUrl();
+
