@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Sprout, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -14,7 +16,7 @@ const Register = () => {
     const [isSuccess, setIsSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const { register } = useAuth();
+    const { register, googleLogin } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -78,6 +80,32 @@ const Register = () => {
                                 {error}
                             </div>
                         )}
+
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                            <GoogleLogin
+                                onSuccess={(credentialResponse) => {
+                                    try {
+                                        const decoded = jwtDecode(credentialResponse.credential);
+                                        googleLogin(decoded);
+                                        navigate('/');
+                                    } catch (err) {
+                                        setError('Failed to decode Google token.');
+                                    }
+                                }}
+                                onError={() => {
+                                    setError('Google Registration Failed.');
+                                }}
+                                theme="filled_blue"
+                                shape="pill"
+                                text="signup_with"
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0', color: 'var(--text-light)' }}>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>
+                            <span style={{ padding: '0 1rem', fontSize: '0.875rem' }}>OR</span>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>
+                        </div>
 
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <div>

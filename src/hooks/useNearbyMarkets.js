@@ -11,7 +11,7 @@ const STATE_CAPITALS = {
     'Odisha': { lat: 20.2961, lon: 85.8245 }
 };
 
-export const useNearbyMarkets = (location, userState, detectedCrop, manualState) => {
+export const useNearbyMarkets = (location, userState, detectedCrop, manualState, address) => {
     const [markets, setMarkets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -27,7 +27,12 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
             let resultData = [];
             let resultError = null;
             try {
-                const { data, error: apiError } = await fetchMarketPrices({ commodity: detectedCrop });
+                // userState is directly updated by LiveMarket if overridden
+                const effectiveState = userState;
+                const { data, error: apiError } = await fetchMarketPrices({ 
+                    commodity: detectedCrop,
+                    state: effectiveState
+                });
                 resultData = data;
                 resultError = apiError;
 
@@ -59,11 +64,10 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
     const processedMarkets = useMemo(() => {
         if (!rawRecords.length && loading) return [];
 
-        const effectiveState = manualState || userState;
         const userLat = location?.lat;
         const userLon = location?.lon;
-        const effectiveLat = manualState && STATE_CAPITALS[manualState] ? STATE_CAPITALS[manualState].lat : userLat;
-        const effectiveLon = manualState && STATE_CAPITALS[manualState] ? STATE_CAPITALS[manualState].lon : userLon;
+        const effectiveLat = userLat;
+        const effectiveLon = userLon;
 
         const mapped = rawRecords.map(record => {
             const marketCoords = getMarketCoords(record);
@@ -71,18 +75,18 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
 
             if (effectiveLat && marketCoords) {
                 distance = calculateDistance(effectiveLat, effectiveLon, marketCoords.lat, marketCoords.lon);
-            } else if (effectiveState && record.state) {
-                const normUser = effectiveState.toLowerCase().replace('state', '').trim();
-                const recordState = record.state.toLowerCase();
-                if (recordState.includes(normUser)) {
+            } else if (address && record.district) {
+                const normAddress = address.toLowerCase();
+                const recordDistrict = record.district.toLowerCase();
+                // If the market is in the user's city/district, it's very close (5 to 25 km)
+                if (normAddress.includes(recordDistrict) || recordDistrict.includes(normAddress.split(',')[0].trim())) {
                     const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    distance = (hash % 60) + 20;
+                    distance = (hash % 20) + 5;
                 } else {
-                    distance = 999;
+                    distance = 9999;
                 }
             } else {
-                const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                distance = (hash % 80) + 120;
+                distance = 9999;
             }
 
             return {
@@ -93,19 +97,13 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState)
         });
 
         // Filter and Sort
-        // User Request: b/w 1 to 150 km only, arranged in ascending order.
+        // User Request: strict 100 km only
         let final = mapped
-            .filter(m => m.distance >= 0 && m.distance <= 150) // Allowing 0 for same-city
+            .filter(m => m.distance >= 0 && m.distance <= 100)
             .sort((a, b) => a.distance - b.distance);
 
-        // If no markets in that range, still try to show the closest ones as a fallback 
-        // but the user was specific, so let's stick to the range if possible.
-        if (final.length === 0) {
-            final = mapped.sort((a, b) => a.distance - b.distance).slice(0, 5);
-        }
-
         return final;
-    }, [rawRecords, loading, location, manualState, userState]);
+    }, [rawRecords, loading, location, userState, address]);
 
     useEffect(() => {
         setMarkets(processedMarkets);

@@ -1,0 +1,470 @@
+{
+    "market_coordinates": [
+        {
+            "name": "Chennai",
+            "lat": 13.0827,
+            "lon": 80.2707
+        },
+        {
+            "name": "Coimbatore",
+            "lat": 11.0168,
+            "lon": 76.9558
+        },
+        {
+            "name": "Madurai",
+            "lat": 9.9252,
+            "lon": 78.1198
+        },
+        {
+            "name": "Trichy",
+            "lat": 10.7905,
+            "lon": 78.7047
+        },
+        {
+            "name": "Salem",
+            "lat": 11.6643,
+            "lon": 78.146
+        },
+        {
+            "name": "Visakhapatnam",
+            "lat": 17.6868,
+            "lon": 83.2185
+        },
+        {
+            "name": "Vijayawada",
+            "lat": 16.5062,
+            "lon": 80.648
+        },
+        {
+            "name": "Guntur",
+            "lat": 16.3067,
+            "lon": 80.4365
+        },
+        {
+            "name": "Nellore",
+            "lat": 14.4426,
+            "lon": 79.9865
+        },
+        {
+            "name": "Kurnool",
+            "lat": 15.8281,
+            "lon": 78.0373
+        },
+        {
+            "name": "Trivandrum",
+            "lat": 8.5241,
+            "lon": 76.9366
+        },
+        {
+            "name": "Kochi",
+            "lat": 9.9312,
+            "lon": 76.2673
+        },
+        {
+            "name": "Kozhikode",
+            "lat": 11.2588,
+            "lon": 75.7804
+        },
+        {
+            "name": "Thrissur",
+            "lat": 10.5276,
+            "lon": 76.2144
+        },
+        {
+            "name": "Karanjia",
+            "lat": 21.9213,
+            "lon": 85.9723
+        },
+        {
+            "name": "Mayurbhanj",
+            "lat": 21.9351,
+            "lon": 86.7324
+        },
+        {
+            "name": "Erode",
+            "lat": 11.341,
+            "lon": 77.7172
+        },
+        {
+            "name": "Tuticorin",
+            "lat": 8.8053,
+            "lon": 78.146
+        },
+        {
+            "name": "Thanjavur",
+            "lat": 10.7852,
+            "lon": 79.1378
+        },
+        {
+            "name": "Tirupati",
+            "lat": 13.6288,
+            "lon": 79.4192
+        },
+        {
+            "name": "Anantapur",
+            "lat": 14.6819,
+            "lon": 77.6006
+        },
+        {
+            "name": "Nashik",
+            "lat": 19.997,
+            "lon": 73.789
+        },
+        {
+            "name": "Pune",
+            "lat": 18.52,
+            "lon": 73.856
+        },
+        {
+            "name": "Mumbai",
+            "lat": 19.076,
+            "lon": 72.877
+        },
+        {
+            "name": "Indore",
+            "lat": 22.719,
+            "lon": 75.857
+        },
+        {
+            "name": "Karnal",
+            "lat": 29.686,
+            "lon": 76.99
+        },
+        {
+            "name": "Azadpur",
+            "lat": 28.707,
+            "lon": 77.181
+        }
+    ],
+    "markets": [
+        {
+            "market": "Chennai",
+            "commodity": "Tomato",
+            "district": "Chennai",
+            "state": "Tamil Nadu",
+            "modal_price": "1850"
+        },
+        {
+            "market": "Madurai",
+            "commodity": "Onion",
+            "district": "Madurai",
+            "state": "Tamil Nadu",
+            "modal_price": "2400"
+        },
+        {
+            "market": "Coimbatore",
+            "commodity": "Brinjal",
+            "district": "Coimbatore",
+            "state": "Tamil Nadu",
+            "modal_price": "1200"
+        },
+        {
+            "market": "Trichy",
+            "commodity": "Tomato",
+            "district": "Trichy",
+            "state": "Tamil Nadu",
+            "modal_price": "1900"
+        },
+        {
+            "market": "Salem",
+            "commodity": "Cabbage",
+            "district": "Salem",
+            "state": "Tamil Nadu",
+            "modal_price": "1100"
+        },
+        {
+            "market": "Erode",
+            "commodity": "Turmeric",
+            "district": "Erode",
+            "state": "Tamil Nadu",
+            "modal_price": "7500"
+        },
+        {
+            "market": "Ottanchatram",
+            "commodity": "Tomato",
+            "district": "Dindigul",
+            "state": "Tamil Nadu",
+            "modal_price": "1600"
+        },
+        {
+            "market": "Thanjavur",
+            "commodity": "Rice",
+            "district": "Thanjavur",
+            "state": "Tamil Nadu",
+            "modal_price": "3200"
+        },
+        {
+            "market": "Vellore",
+            "commodity": "Mango",
+            "district": "Vellore",
+            "state": "Tamil Nadu",
+            "modal_price": "4800"
+        },
+        {
+            "market": "Visakhapatnam",
+            "commodity": "Rice",
+            "district": "Visakhapatnam",
+            "state": "Andhra Pradesh",
+            "modal_price": "3600"
+        },
+        {
+            "market": "Vijayawada",
+            "commodity": "Mango",
+            "district": "Krishna",
+            "state": "Andhra Pradesh",
+            "modal_price": "4500"
+        },
+        {
+            "market": "Guntur",
+            "commodity": "Chilli",
+            "district": "Guntur",
+            "state": "Andhra Pradesh",
+            "modal_price": "18000"
+        },
+        {
+            "market": "Nellore",
+            "commodity": "Tomato",
+            "district": "Nellore",
+            "state": "Andhra Pradesh",
+            "modal_price": "1750"
+        },
+        {
+            "market": "Kurnool",
+            "commodity": "Onion",
+            "district": "Kurnool",
+            "state": "Andhra Pradesh",
+            "modal_price": "2100"
+        },
+        {
+            "market": "Tirupati",
+            "commodity": "Green Chillies",
+            "district": "Chittoor",
+            "state": "Andhra Pradesh",
+            "modal_price": "3200"
+        },
+        {
+            "market": "Anantapur",
+            "commodity": "Groundnut",
+            "district": "Anantapur",
+            "state": "Andhra Pradesh",
+            "modal_price": "6500"
+        },
+        {
+            "market": "Rajahmundry",
+            "commodity": "Coconut",
+            "district": "East Godavari",
+            "state": "Andhra Pradesh",
+            "modal_price": "2700"
+        },
+        {
+            "market": "Kochi",
+            "commodity": "Coconut",
+            "district": "Ernakulam",
+            "state": "Kerala",
+            "modal_price": "2500"
+        },
+        {
+            "market": "Trivandrum",
+            "commodity": "Banana",
+            "district": "Thiruvananthapuram",
+            "state": "Kerala",
+            "modal_price": "3200"
+        },
+        {
+            "market": "Kozhikode",
+            "commodity": "Potato",
+            "district": "Kozhikode",
+            "state": "Kerala",
+            "modal_price": "1500"
+        },
+        {
+            "market": "Palakkad",
+            "commodity": "Rice",
+            "district": "Palakkad",
+            "state": "Kerala",
+            "modal_price": "2800"
+        },
+        {
+            "market": "Thrissur",
+            "commodity": "Pineapple",
+            "district": "Thrissur",
+            "state": "Kerala",
+            "modal_price": "3500"
+        },
+        {
+            "market": "Kannur",
+            "commodity": "Cashew",
+            "district": "Kannur",
+            "state": "Kerala",
+            "modal_price": "8500"
+        },
+        {
+            "market": "Bangalore",
+            "commodity": "Potato",
+            "district": "Bangalore",
+            "state": "Karnataka",
+            "modal_price": "1800"
+        },
+        {
+            "market": "Mysore",
+            "commodity": "Carrot",
+            "district": "Mysore",
+            "state": "Karnataka",
+            "modal_price": "2600"
+        },
+        {
+            "market": "Hubli",
+            "commodity": "Onion",
+            "district": "Dharwad",
+            "state": "Karnataka",
+            "modal_price": "1900"
+        },
+        {
+            "market": "Belgaum",
+            "commodity": "Sugarcane",
+            "district": "Belgaum",
+            "state": "Karnataka",
+            "modal_price": "3200"
+        },
+        {
+            "market": "Mangalore",
+            "commodity": "Coconut",
+            "district": "Dakshina Kannada",
+            "state": "Karnataka",
+            "modal_price": "2400"
+        },
+        {
+            "market": "Hyderabad",
+            "commodity": "Tomato",
+            "district": "Hyderabad",
+            "state": "Telangana",
+            "modal_price": "1950"
+        },
+        {
+            "market": "Warangal",
+            "commodity": "Turmeric",
+            "district": "Warangal",
+            "state": "Telangana",
+            "modal_price": "7800"
+        },
+        {
+            "market": "Nizamabad",
+            "commodity": "Rice",
+            "district": "Nizamabad",
+            "state": "Telangana",
+            "modal_price": "3400"
+        },
+        {
+            "market": "Karimnagar",
+            "commodity": "Chilli",
+            "district": "Karimnagar",
+            "state": "Telangana",
+            "modal_price": "17500"
+        },
+        {
+            "market": "Mumbai",
+            "commodity": "Onion",
+            "district": "Mumbai",
+            "state": "Maharashtra",
+            "modal_price": "2600"
+        },
+        {
+            "market": "Pune",
+            "commodity": "Tomato",
+            "district": "Pune",
+            "state": "Maharashtra",
+            "modal_price": "2100"
+        },
+        {
+            "market": "Nashik",
+            "commodity": "Grapes",
+            "district": "Nashik",
+            "state": "Maharashtra",
+            "modal_price": "6500"
+        },
+        {
+            "market": "Nagpur",
+            "commodity": "Orange",
+            "district": "Nagpur",
+            "state": "Maharashtra",
+            "modal_price": "5500"
+        },
+        {
+            "market": "Bhubaneswar",
+            "commodity": "Rice",
+            "district": "Khurda",
+            "state": "Odisha",
+            "modal_price": "3100"
+        },
+        {
+            "market": "Cuttack",
+            "commodity": "Vegetables",
+            "district": "Cuttack",
+            "state": "Odisha",
+            "modal_price": "1800"
+        },
+        {
+            "market": "Berhampur",
+            "commodity": "Turmeric",
+            "district": "Ganjam",
+            "state": "Odisha",
+            "modal_price": "7200"
+        }
+    ],
+    "users": [
+        {
+            "fullName": "Final Verified",
+            "email": "v4@success.com",
+            "password": "$pbkdf2-sha256$29000$RIhxLqW01tp7TylFyFkLQQ$NXNWLNFZ2eGo8QqbpOvjwSl2IdgExcFMtsvnn7Z2MwE",
+            "location": "Success"
+        },
+        {
+            "fullName": "Safe User",
+            "email": "safe@resilient.com",
+            "password": "$pbkdf2-sha256$29000$n/Pee0/JOQfgfG.tFWIsZQ$kOcmmZLx46ihde6W.CEsy9wZdh7438vGGd7aBNhmP74",
+            "location": "Loc"
+        },
+        {
+            "fullName": "Final Silent User",
+            "email": "silent@success.com",
+            "password": "$pbkdf2-sha256$29000$tRYCwNhbS2mtFWKMkbL2Xg$q2vHgpX6xipWj3jijq...vo1y7sCeqeFoH/2QEJybDU",
+            "location": "Loc"
+        },
+        {
+            "fullName": "Test User",
+            "email": "testuser@example.com",
+            "password": "$pbkdf2-sha256$29000$wxiDsFYKASBkLOUcI8S4Fw$Ix8dnaM7tm/auZ02lgefZ2vcZmDI9ZxhJ0EPZLZtC6o",
+            "location": "Test City"
+        },
+        {
+            "fullName": "Final Success User",
+            "email": "final_success@gold.com",
+            "password": "$pbkdf2-sha256$29000$X8u5d65Vaq31fs/5HwPgHA$38GZJQskcxpvPI37oqRcBKXjvWt7S8Kts4xxG8wF0UY",
+            "location": "Success City"
+        },
+        {
+            "fullName": "testuser1",
+            "email": "testuser1@gmail.com",
+            "password": "$pbkdf2-sha256$29000$TWmNESJkbM2Zs5YyJgTg/A$JcXf0UXZ5kRsu.zm0x46cv3YBgXYHTX9/LSHfwut86g",
+            "location": "trichy, tamil nadu"
+        },
+        {
+            "fullName": "Test User",
+            "email": "test@example.com",
+            "password": "$pbkdf2-sha256$29000$3xvDuHdOqVVq7d27lxLC2A$tpuLMj4c2uGr.yWgr81i7/A8Ga1FUeC5DVcoaQyXCjI",
+            "location": "Test Location"
+        },
+        {
+            "fullName": "Pavan Debug",
+            "email": "debug@pavan.com",
+            "password": "$pbkdf2-sha256$29000$cy7lHKOU8n6PkRKiFMI4Bw$VypdyWlI4Pd1Y/2aJVN/hZzBzYkRzGLZXbwI90ZVo.o",
+            "location": "Bangalore"
+        },
+        {
+            "fullName": "user1",
+            "email": "user1@gmail.com",
+            "password": "$pbkdf2-sha256$29000$5Lw3ZsxZC.Fc633PWUspRQ$60DBcq2MbTNurM0Uw470y/aB8lPnF1.y2ddLFi6ByOw",
+            "location": "trichy, tamil nadu"
+        }
+    ]
+}

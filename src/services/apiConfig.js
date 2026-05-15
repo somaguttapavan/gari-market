@@ -20,7 +20,7 @@ const getBaseUrl = () => {
     }
 
     // Default fallback for Mobile WebView and remote local devices
-    return 'http://10.65.98.129:8000';
+    return 'http://10.221.48.129:8000';
 };
 
 export const API_BASE_URL = getBaseUrl();

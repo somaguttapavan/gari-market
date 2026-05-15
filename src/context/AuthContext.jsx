@@ -39,6 +39,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const googleLogin = (userData) => {
+        // We bypass the backend for Google Auth for simplicity,
+        // unless you have a dedicated backend route for token verification.
+        const authData = {
+            ...userData,
+            token: userData.sub, // Use Google ID as a mock token
+            source: 'google'
+        };
+        localStorage.setItem('agri_user', JSON.stringify(authData));
+        setUser(authData);
+        return { success: true };
+    };
+
     const logout = () => {
         localStorage.removeItem('agri_user');
         setUser(null);
@@ -70,7 +83,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, register, googleLogin, loading }}>
             {children}
         </AuthContext.Provider>
     );

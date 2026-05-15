@@ -3,10 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Sprout, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
-    const { login } = useAuth();
+    const { login, googleLogin } = useAuth();
     const navigate = useNavigate();
 
     const [error, setError] = useState('');
@@ -65,6 +67,32 @@ const Login = () => {
                         {error}
                     </div>
                 )}
+
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                    <GoogleLogin
+                        onSuccess={(credentialResponse) => {
+                            try {
+                                const decoded = jwtDecode(credentialResponse.credential);
+                                googleLogin(decoded);
+                                navigate('/');
+                            } catch (err) {
+                                setError('Failed to decode Google token.');
+                            }
+                        }}
+                        onError={() => {
+                            setError('Google Login Failed.');
+                        }}
+                        theme="filled_blue"
+                        shape="pill"
+                        text="continue_with"
+                    />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0', color: 'var(--text-light)' }}>
+                    <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>
+                    <span style={{ padding: '0 1rem', fontSize: '0.875rem' }}>OR</span>
+                    <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>
+                </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <div>

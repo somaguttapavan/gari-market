@@ -32,7 +32,7 @@ const Profile = () => {
                         }}>
                             <User size={64} />
                         </div>
-                        <h2 style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary-dark)' }}>{user.name}</h2>
+                        <h2 style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary-dark)' }}>{user.fullName || user.name}</h2>
                         <p style={{ color: 'var(--text-light)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                             <ShieldCheck size={16} color="var(--success)" /> Verified Farmer Portfolio
                         </p>

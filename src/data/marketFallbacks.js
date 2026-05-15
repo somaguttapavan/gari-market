@@ -31,6 +31,7 @@ export const FALLBACK_MARKETS = [
 
     // Karnataka
     { market: 'Bangalore', district: 'Bangalore', state: 'Karnataka', commodity: 'Potato', modal_price: '1800' },
+    { market: 'Bangalore', district: 'Bangalore', state: 'Karnataka', commodity: 'Tomato', modal_price: '2200' },
     { market: 'Mysore', district: 'Mysore', state: 'Karnataka', commodity: 'Carrot', modal_price: '2600' },
     { market: 'Hubli', district: 'Dharwad', state: 'Karnataka', commodity: 'Onion', modal_price: '1900' },
     { market: 'Belgaum', district: 'Belgaum', state: 'Karnataka', commodity: 'Sugarcane', modal_price: '3200' },

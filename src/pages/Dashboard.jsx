@@ -40,7 +40,7 @@ const Dashboard = () => {
                     animate={{ opacity: 1, x: 0 }}
                     style={{ fontSize: '2.5rem', color: 'var(--primary-dark)' }}
                 >
-                    Welcome, {user?.name || 'Farmer'}!
+                    Welcome, {user?.fullName || user?.name || 'Farmer'}!
                 </motion.h2>
                 <p style={{ color: 'var(--text-light)', fontSize: '1.2rem' }}>
                     Here's what's happening in your agricultural ecosystem today.

@@ -38,3 +38,11 @@ __pycache__/
 .venv/
 .pytest_cache/
 *.egg-info/
+
+# Large build artifacts
+*.apk
+*.zip
+*.pdf
+.java/
+local_build_log*.txt
+compile_error*.txt

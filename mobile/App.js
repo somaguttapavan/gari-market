@@ -7,7 +7,12 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 
 // Configuration
-const LAPTOP_IP = '10.65.98.129';
+let LAPTOP_IP = '10.221.48.129'; // Fallback to current known IP
+const hostUri = Constants?.expoConfig?.hostUri || Constants?.manifest?.hostUri;
+if (hostUri) {
+  LAPTOP_IP = hostUri.split(':')[0];
+}
+
 const DEV_URL = `http://${LAPTOP_IP}:5173`;
 const LOCAL_INDEX_URI = 'file:///android_asset/www/index.html';
 
@@ -19,21 +24,10 @@ export default function App() {
   const [loadUrl, setLoadUrl] = useState(LOCAL_INDEX_URI);
   const webViewRef = useRef(null);
 
-  // Connectivity check to choose between Dev and Prod
+  // Force local bundled assets for standalone APK
   useEffect(() => {
-    const checkDevServer = async () => {
-      try {
-        const response = await fetch(DEV_URL, { method: 'HEAD' });
-        if (response.ok) {
-          console.log('Vite Dev Server detected! Loading live version...');
-          setLoadUrl(DEV_URL);
-        }
-      } catch (e) {
-        console.log('Dev server unreachable, using bundled assets.');
-        setLoadUrl(LOCAL_INDEX_URI);
-      }
-    };
-    checkDevServer();
+    console.log('Using bundled assets for standalone APK.');
+    setLoadUrl(LOCAL_INDEX_URI);
   }, []);
 
   useEffect(() => {
@@ -178,6 +172,7 @@ export default function App() {
               allowUniversalAccessFromFileURLs={true}
               mixedContentMode="always"
               originWhitelist={['*']}
+              userAgent="Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36"
               injectedJavaScript={`
                 (function() {
                   setInterval(() => {

@@ -32,14 +32,16 @@ const LiveMarket = () => {
         isNative
     } = useLocation();
 
-    const [manualState, setManualState] = useState('');
+    const [manualCity, setManualCity] = useState('');
     const [locationChecked, setLocationChecked] = useState(false);
 
+    // We no longer pass manualState, instead we just update the actual location context when a city is picked
     const { markets, loading: marketsLoading, error: marketsError, refresh } = useNearbyMarkets(
         location,
         userState,
         detectedCrop,
-        manualState
+        '', // manualState removed
+        address
     );
 
     const requestGeolocation = React.useCallback(async (initialMode = 'HIGH_ACCURACY') => {
@@ -62,11 +64,34 @@ const LiveMarket = () => {
             }
 
             // Helper to handle success
-            const handleSuccess = (position) => {
+            const handleSuccess = async (position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
                 setLocation({ lat, lon });
                 setLocationSource('BROWSER_GPS');
+                
+                // Reverse geocode to get the user's state for accurate market filtering
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.address) {
+                            const state = data.address.state;
+                            const city = data.address.city || data.address.county || data.address.town || data.address.village;
+                            if (state) {
+                                setUserState(state);
+                                if (city) {
+                                    setAddress(`${city}, ${state}`);
+                                } else {
+                                    setAddress(state);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Reverse geocoding failed", e);
+                }
+
                 setLocationChecked(true);
                 setGeoError(null);
                 setGeoLoading(false);
@@ -181,31 +206,33 @@ const LiveMarket = () => {
             <header style={{ marginBottom: '2rem' }}>
                 <h2 style={{
                     fontSize: windowWidth < 768 ? '1.8rem' : '2.5rem',
-                    color: 'var(--primary-dark)',
+                    color: '#15803d',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.75rem',
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    fontWeight: 'bold'
                 }}>
-                    <TrendingUp size={windowWidth < 768 ? 28 : 36} /> Live Market Prices
+                    <TrendingUp size={windowWidth < 768 ? 28 : 36} strokeWidth={3} /> Live Market Prices
                 </h2>
-                <p style={{ color: 'var(--text-light)', fontSize: windowWidth < 768 ? '0.95rem' : '1.1rem' }}>
-                    Real-time wholesale prices from markets near you.
+                <p style={{ color: '#64748b', fontSize: windowWidth < 768 ? '0.95rem' : '1.1rem', marginTop: '0.5rem' }}>
+                    Real-time wholesale prices from markets within 100km radius.
                 </p>
 
                 {detectedCrop && (
                     <div style={{
-                        marginTop: '1rem',
-                        padding: '1rem',
-                        backgroundColor: '#e8f5e9',
+                        marginTop: '1.5rem',
+                        padding: '0.75rem 1rem',
+                        border: '1px solid #22c55e',
                         borderRadius: '0.5rem',
-                        border: '1px solid var(--primary-light)',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.5rem'
+                        gap: '0.5rem',
+                        backgroundColor: 'transparent',
+                        color: '#15803d'
                     }}>
-                        <Navigation size={18} color="var(--primary)" />
-                        <span>Recommended markets for: <strong>{detectedCrop}</strong></span>
+                        <Navigation size={18} />
+                        <span>Recommended markets for: <strong style={{ color: '#0f172a' }}>{detectedCrop}</strong></span>
                     </div>
                 )}
             </header>
@@ -245,17 +272,61 @@ const LiveMarket = () => {
 
             {/* Location Status */}
             {location && !isLoading && (
-                <div style={{ backgroundColor: '#f0fdf4', color: '#15803d', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {locationSource === 'NATIVE_GPS' ? <Smartphone size={20} /> : <Globe size={20} />}
-                    <span>
-                        <strong>{address || "Location Detected"}</strong>
-                        <span style={{ fontSize: '0.85em', marginLeft: '0.5rem', opacity: 0.8 }}>
-                            ({locationSource === 'NATIVE_GPS' ? 'Mobile GPS' : locationSource === 'IP_GEOLOCATION' ? 'IP Location' : 'Browser Location'})
-                        </span>
-                    </span>
-                    <button onClick={() => requestGeolocation()} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#15803d', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                        <Navigation size={14} /> Update
-                    </button>
+                <div style={{ 
+                    backgroundColor: '#f0fdf4', 
+                    padding: '1.5rem', 
+                    borderRadius: '0.5rem', 
+                    marginBottom: '2rem', 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '1rem'
+                }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                        <Globe size={24} color="#15803d" style={{ marginTop: '0.25rem' }} />
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Smartphone size={16} color="#15803d" />
+                                <strong style={{ color: '#15803d', fontSize: '1.1rem' }}>Using {locationSource === 'NATIVE_GPS' ? 'Mobile' : 'Browser'} Location</strong>
+                            </div>
+                            <div style={{ color: '#22c55e', marginTop: '0.25rem' }}>
+                                {address || "Location Detected"}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                        <div style={{ color: '#22c55e', fontSize: '0.9rem' }}>
+                            {locationSource === 'NATIVE_GPS' ? 'Mobile App' : 'Web Browser'}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <select
+                                value={manualCity}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setManualCity(val);
+                                    if (val) {
+                                        const [city, state, lat, lon] = val.split('|');
+                                        setLocation({ lat: parseFloat(lat), lon: parseFloat(lon) });
+                                        setLocationSource('NATIVE_GPS'); // Trick it into thinking it's exact
+                                        setUserState(state);
+                                        setAddress(`${city}, ${state}`);
+                                        setGeoError(null);
+                                    }
+                                }}
+                                style={{ padding: '0.2rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #86efac', backgroundColor: 'transparent', color: '#15803d', fontSize: '0.75rem', outline: 'none' }}
+                            >
+                                <option value="">Test Location...</option>
+                                <option value="Trichy|Tamil Nadu|10.7905|78.7047">Trichy, TN</option>
+                                <option value="Chennai|Tamil Nadu|13.0827|80.2707">Chennai, TN</option>
+                                <option value="Madurai|Tamil Nadu|9.9252|78.1198">Madurai, TN</option>
+                                <option value="Coimbatore|Tamil Nadu|11.0168|76.9558">Coimbatore, TN</option>
+                                <option value="Bangalore|Karnataka|12.9716|77.5946">Bangalore, KA</option>
+                                <option value="Hyderabad|Telangana|17.3850|78.4867">Hyderabad, TS</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -267,8 +338,8 @@ const LiveMarket = () => {
             ) : (
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
-                    gap: '1.25rem'
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                    gap: '1.5rem'
                 }}>
                     {markets.length > 0 ? (
                         markets.map((market, index) => (
@@ -277,37 +348,93 @@ const LiveMarket = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.05 }}
-                                className="glass-card"
-                                style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                                style={{ 
+                                    backgroundColor: 'white', 
+                                    borderRadius: '0.75rem', 
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                    padding: '1.5rem',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '1.25rem'
+                                }}
                             >
+                                {/* Header row */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <div>
-                                        <h3 style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '1.1rem' }}>{market.market}</h3>
-                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{market.district}, {market.state}</p>
+                                    <div style={{ flex: 1, paddingRight: '1rem' }}>
+                                        <h3 style={{ color: '#15803d', fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.4', margin: 0 }}>{market.market}</h3>
+                                        <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>{market.district}, {market.state}</p>
                                     </div>
-                                    <span style={{ backgroundColor: '#f0f9ff', color: '#0369a1', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600' }}>
-                                        {market.distance} km
-                                    </span>
+                                    <div style={{ 
+                                        backgroundColor: '#dcfce7', 
+                                        padding: '0.4rem 0.5rem', 
+                                        borderRadius: '0.25rem', 
+                                        textAlign: 'center',
+                                        minWidth: '55px'
+                                    }}>
+                                        <div style={{ color: '#166534', fontWeight: 'bold', fontSize: '0.85rem' }}>{market.distance} km</div>
+                                        <div style={{ color: '#166534', fontSize: '0.7rem' }}>away</div>
+                                    </div>
                                 </div>
 
-                                <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', fontSize: '0.9rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                        <span style={{ color: '#64748b' }}>Price:</span>
-                                        <span style={{ fontWeight: '700', color: 'var(--secondary)' }}>₹{market.modal_price}/quintal</span>
+                                {/* Details box */}
+                                <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.5rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                        <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Commodity:</span>
+                                        <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '0.9rem' }}>{market.commodity}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                        <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Modal Price:</span>
+                                        <span style={{ fontWeight: 'bold', color: '#15803d', fontSize: '0.9rem' }}>₹{market.modal_price}/quintal</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: '#64748b' }}>Est. Travel:</span>
-                                        <span style={{ fontWeight: '600' }}>₹{market.travelExpense}</span>
+                                        <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Est. Travel Cost:</span>
+                                        <span style={{ fontWeight: 'bold', color: '#ea580c', fontSize: '0.9rem' }}>₹{market.travelExpense}</span>
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => handleNavigate(market.market, market.district, market.state)}
-                                    className="btn-primary"
-                                    style={{ width: '100%', marginTop: 'auto' }}
-                                >
-                                    <Navigation size={16} /> Get Directions
-                                </button>
+                                {/* Buttons */}
+                                <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
+                                    <button 
+                                        onClick={() => handleNavigate(market.market, market.district, market.state)}
+                                        style={{ 
+                                            flex: 1, 
+                                            backgroundColor: '#16a34a', 
+                                            color: 'white', 
+                                            border: 'none', 
+                                            borderRadius: '0.375rem', 
+                                            padding: '0.75rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.9rem',
+                                            cursor: 'pointer',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseOver={(e) => e.target.style.backgroundColor = '#15803d'}
+                                        onMouseOut={(e) => e.target.style.backgroundColor = '#16a34a'}
+                                    >
+                                        <Navigation size={18} fill="white" /> Navigate
+                                    </button>
+                                    <button style={{
+                                        width: '48px',
+                                        backgroundColor: 'white',
+                                        border: '1px solid #cbd5e1',
+                                        borderRadius: '0.375rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#64748b',
+                                        cursor: 'pointer',
+                                        transition: 'background-color 0.2s'
+                                    }}
+                                    onMouseOver={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                                    onMouseOut={(e) => e.target.style.backgroundColor = 'white'}
+                                    >
+                                        <Info size={20} />
+                                    </button>
+                                </div>
                             </motion.div>
                         ))
                     ) : (

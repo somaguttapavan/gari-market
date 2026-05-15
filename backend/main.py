@@ -261,14 +261,19 @@ async def login_user(user: UserLogin):
     }
 
 @app.get("/api/markets/nearby")
-async def get_nearby_markets(lat: float, lon: float):
+async def get_nearby_markets(lat: float, lon: float, commodity: Optional[str] = None):
     nearby_markets = []
     
     markets_coll = get_collection("markets")
     coords_coll = get_collection("market_coordinates")
     
-    # Fetch all markets and coordinates from DB
-    markets = await markets_coll.find().to_list(length=1000)
+    # Fetch markets from DB, optionally filter by commodity
+    query = {}
+    if commodity:
+        # Case-insensitive partial match for commodity
+        query["commodity"] = {"$regex": commodity, "$options": "i"}
+        
+    markets = await markets_coll.find(query).to_list(length=1000)
     
     for market in markets:
         # Remove _id from mongo document
