@@ -7,6 +7,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 
 // Configuration
+const PRODUCTION_URL = 'https://gari-market-q1pj.vercel.app';
+
 let LAPTOP_IP = '10.221.48.129'; // Fallback to current known IP
 const hostUri = Constants?.expoConfig?.hostUri || Constants?.manifest?.hostUri;
 if (hostUri) {
@@ -14,20 +16,32 @@ if (hostUri) {
 }
 
 const DEV_URL = `http://${LAPTOP_IP}:5173`;
-const LOCAL_INDEX_URI = 'file:///android_asset/www/index.html';
 
 export default function App() {
   const [error, setError] = useState(false);
   const [userName, setUserName] = useState('Farmer');
   const [location, setLocation] = useState(null);
   const [isSyncing, setIsSyncing] = useState(true);
-  const [loadUrl, setLoadUrl] = useState(LOCAL_INDEX_URI);
+  const [loadUrl, setLoadUrl] = useState(PRODUCTION_URL);
   const webViewRef = useRef(null);
 
-  // Force local bundled assets for standalone APK
+  // Try dev server first (for local development), fall back to production URL
   useEffect(() => {
-    console.log('Using bundled assets for standalone APK.');
-    setLoadUrl(LOCAL_INDEX_URI);
+    const checkDevServer = async () => {
+      try {
+        const response = await fetch(DEV_URL, { method: 'HEAD' });
+        if (response.ok) {
+          console.log('Vite Dev Server detected! Loading live version...');
+          setLoadUrl(DEV_URL);
+          return;
+        }
+      } catch (e) {
+        // Dev server not reachable
+      }
+      console.log('Using production URL:', PRODUCTION_URL);
+      setLoadUrl(PRODUCTION_URL);
+    };
+    checkDevServer();
   }, []);
 
   useEffect(() => {
