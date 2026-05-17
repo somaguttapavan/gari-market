@@ -301,30 +301,32 @@ const LiveMarket = () => {
                             {locationSource === 'NATIVE_GPS' ? 'Mobile App' : 'Web Browser'}
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <select
-                                value={manualCity}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setManualCity(val);
-                                    if (val) {
-                                        const [city, state, lat, lon] = val.split('|');
-                                        setLocation({ lat: parseFloat(lat), lon: parseFloat(lon) });
-                                        setLocationSource('NATIVE_GPS'); // Trick it into thinking it's exact
-                                        setUserState(state);
-                                        setAddress(`${city}, ${state}`);
-                                        setGeoError(null);
-                                    }
-                                }}
-                                style={{ padding: '0.2rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #86efac', backgroundColor: 'transparent', color: '#15803d', fontSize: '0.75rem', outline: 'none' }}
-                            >
-                                <option value="">Test Location...</option>
-                                <option value="Trichy|Tamil Nadu|10.7905|78.7047">Trichy, TN</option>
-                                <option value="Chennai|Tamil Nadu|13.0827|80.2707">Chennai, TN</option>
-                                <option value="Madurai|Tamil Nadu|9.9252|78.1198">Madurai, TN</option>
-                                <option value="Coimbatore|Tamil Nadu|11.0168|76.9558">Coimbatore, TN</option>
-                                <option value="Bangalore|Karnataka|12.9716|77.5946">Bangalore, KA</option>
-                                <option value="Hyderabad|Telangana|17.3850|78.4867">Hyderabad, TS</option>
-                            </select>
+                            {windowWidth >= 768 && (
+                                <select
+                                    value={manualCity}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setManualCity(val);
+                                        if (val) {
+                                            const [city, state, lat, lon] = val.split('|');
+                                            setLocation({ lat: parseFloat(lat), lon: parseFloat(lon) });
+                                            setLocationSource('NATIVE_GPS');
+                                            setUserState(state);
+                                            setAddress(`${city}, ${state}`);
+                                            setGeoError(null);
+                                        }
+                                    }}
+                                    style={{ padding: '0.2rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #86efac', backgroundColor: 'transparent', color: '#15803d', fontSize: '0.75rem', outline: 'none' }}
+                                >
+                                    <option value="">Test Location...</option>
+                                    <option value="Trichy|Tamil Nadu|10.7905|78.7047">Trichy, TN</option>
+                                    <option value="Chennai|Tamil Nadu|13.0827|80.2707">Chennai, TN</option>
+                                    <option value="Madurai|Tamil Nadu|9.9252|78.1198">Madurai, TN</option>
+                                    <option value="Coimbatore|Tamil Nadu|11.0168|76.9558">Coimbatore, TN</option>
+                                    <option value="Bangalore|Karnataka|12.9716|77.5946">Bangalore, KA</option>
+                                    <option value="Hyderabad|Telangana|17.3850|78.4867">Hyderabad, TS</option>
+                                </select>
+                            )}
                         </div>
                     </div>
                 </div>
