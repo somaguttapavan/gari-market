@@ -24,10 +24,6 @@ export const fetchMarketPrices = async (params = {}) => {
             queryParams['filters[commodity]'] = params.commodity;
         }
 
-        if (params.state) {
-            queryParams['filters[state]'] = params.state;
-        }
-
         const response = await axios.get(`${BASE_URL}/${RESOURCE_ID}`, {
             params: queryParams,
             timeout: 15000 // INCREASED FROM 8000 to fix slow server issue
