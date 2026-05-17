@@ -99,42 +99,67 @@ const LiveMarket = () => {
 
             // Helper to handle IP fallback
             const tryIpFallback = async () => {
-                console.log("GPS failed, trying primary IP fallback...");
+                console.log("GPS failed, trying IP geolocation...");
+
+                const withTimeout = (fetchPromise, ms) =>
+                    Promise.race([fetchPromise, new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('timeout')), ms))]);
+
+                // Try ip-api.com (Primary — Fast & reliable in India)
                 try {
-                    // Try ipapi.co (Primary)
-                    const response = await fetch('https://ipapi.co/json/');
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.latitude && data.longitude) {
-                            setLocation({ lat: data.latitude, lon: data.longitude });
+                    const res = await withTimeout(fetch('http://ip-api.com/json/?fields=status,lat,lon,city,regionName'), 5000);
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.status === 'success' && d.lat && d.lon) {
+                            setLocation({ lat: d.lat, lon: d.lon });
                             setLocationSource('IP_GEOLOCATION');
-                            setAddress(`${data.city}, ${data.region}`);
-                            setUserState(data.region);
+                            setAddress(`${d.city}, ${d.regionName}`);
+                            setUserState(d.regionName);
                             setLocationChecked(true);
                             setGeoError(null);
+                            setGeoLoading(false);
+                            console.log(`IP Geolocation success: ${d.city}, ${d.regionName}`);
                             return true;
                         }
                     }
+                } catch (e) { console.warn('ip-api.com failed:', e.message); }
 
-                    // Try ip-api.com (Secondary) if primary failed
-                    console.log("Primary IP fallback failed, trying secondary...");
-                    const res2 = await fetch('http://ip-api.com/json/');
+                // Try ipapi.co (Secondary)
+                try {
+                    const res2 = await withTimeout(fetch('https://ipapi.co/json/'), 5000);
                     if (res2.ok) {
                         const d2 = await res2.json();
-                        if (d2.lat && d2.lon) {
-                            setLocation({ lat: d2.lat, lon: d2.lon });
+                        if (d2.latitude && d2.longitude && !d2.error) {
+                            setLocation({ lat: d2.latitude, lon: d2.longitude });
                             setLocationSource('IP_GEOLOCATION');
-                            setAddress(`${d2.city}, ${d2.regionName}`);
-                            setUserState(d2.regionName);
+                            setAddress(`${d2.city}, ${d2.region}`);
+                            setUserState(d2.region);
                             setLocationChecked(true);
                             setGeoError(null);
+                            setGeoLoading(false);
                             return true;
                         }
                     }
-                } catch (ipError) {
-                    console.error("All IP Geolocation methods failed:", ipError);
-                    return false;
-                }
+                } catch (e) { console.warn('ipapi.co failed:', e.message); }
+
+                // Try geojs.io (Tertiary fallback)
+                try {
+                    const res3 = await withTimeout(fetch('https://get.geojs.io/v1/ip/geo.json'), 5000);
+                    if (res3.ok) {
+                        const d3 = await res3.json();
+                        if (d3.latitude && d3.longitude) {
+                            setLocation({ lat: parseFloat(d3.latitude), lon: parseFloat(d3.longitude) });
+                            setLocationSource('IP_GEOLOCATION');
+                            setAddress(`${d3.city}, ${d3.region}`);
+                            setUserState(d3.region);
+                            setLocationChecked(true);
+                            setGeoError(null);
+                            setGeoLoading(false);
+                            return true;
+                        }
+                    }
+                } catch (e) { console.warn('geojs.io failed:', e.message); }
+
                 return false;
             };
 
