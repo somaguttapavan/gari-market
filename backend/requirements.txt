@@ -1,4 +1,3 @@
-annotated-doc
 annotated-types
 anyio
 certifi
@@ -11,6 +10,7 @@ idna
 joblib
 numpy
 pandas
+Pillow
 pydantic
 pydantic_core
 python-dateutil
@@ -28,4 +28,3 @@ uvicorn
 motor
 python-dotenv
 passlib[bcrypt]
-kagglehub
