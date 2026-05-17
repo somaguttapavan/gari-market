@@ -123,3 +123,59 @@ export const calculateTravelExpense = (distance) => {
     const ratePerKm = 10;
     return distance * ratePerKm;
 };
+
+// ─── OpenStreetMap Geocoding with LocalStorage Cache ───────────────────────
+
+const GEOCACHE_KEY = 'agrigrowth_geocache_v1';
+
+export const getGeocodeCache = () => {
+    try {
+        const raw = localStorage.getItem(GEOCACHE_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+};
+
+export const saveGeocodeCache = (key, coords) => {
+    try {
+        const cache = getGeocodeCache();
+        cache[key] = coords;
+        localStorage.setItem(GEOCACHE_KEY, JSON.stringify(cache));
+    } catch {
+        // LocalStorage might be full or unavailable, silently ignore
+    }
+};
+
+/**
+ * Fetches exact GPS coordinates from OpenStreetMap Nominatim for a given market.
+ * Returns { lat, lon } on success, or null on failure.
+ * NOTE: Nominatim allows max 1 request/second. Always use rate-limiting on callers!
+ */
+export const fetchGeocode = async (market, district, state, country = 'India') => {
+    // Build a progressively specific search query
+    const queries = [
+        `${market}, ${district}, ${state}, ${country}`,
+        `${district}, ${state}, ${country}`,
+    ];
+
+    for (const query of queries) {
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=in`;
+            const res = await fetch(url, {
+                headers: { 'Accept-Language': 'en', 'User-Agent': 'AgriGrowth-App/1.0' }
+            });
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data && data.length > 0) {
+                return {
+                    lat: parseFloat(data[0].lat),
+                    lon: parseFloat(data[0].lon)
+                };
+            }
+        } catch {
+            // Network error, try next query
+        }
+    }
+    return null; // Could not geocode this market
+};

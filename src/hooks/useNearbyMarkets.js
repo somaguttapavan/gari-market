@@ -1,15 +1,19 @@
-import { useState, useEffect, useMemo } from 'react';
-import { fetchMarketPrices, calculateDistance, getMarketCoords, calculateTravelExpense } from '../services/marketService';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+    fetchMarketPrices,
+    calculateDistance,
+    getMarketCoords,
+    calculateTravelExpense,
+    getGeocodeCache,
+    saveGeocodeCache,
+    fetchGeocode
+} from '../services/marketService';
 
-const STATE_CAPITALS = {
-    'Tamil Nadu': { lat: 13.0827, lon: 80.2707 },
-    'Andhra Pradesh': { lat: 17.6868, lon: 83.2185 },
-    'Kerala': { lat: 8.5241, lon: 76.9366 },
-    'Karnataka': { lat: 12.9716, lon: 77.5946 },
-    'Telangana': { lat: 17.3850, lon: 78.4867 },
-    'Maharashtra': { lat: 19.0760, lon: 72.8777 },
-    'Odisha': { lat: 20.2961, lon: 85.8245 }
-};
+const MAX_DISTANCE_KM = 150;
+const GEOCODE_INTERVAL_MS = 1100; // 1.1s between calls to respect Nominatim's 1 req/s limit
+
+const makeGeoKey = (market, district, state) =>
+    `${market}|${district}|${state}`.toLowerCase().replace(/\s+/g, '_');
 
 export const useNearbyMarkets = (location, userState, detectedCrop, manualState, address) => {
     const [markets, setMarkets] = useState([]);
@@ -17,9 +21,16 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState,
     const [error, setError] = useState(null);
     const [rawRecords, setRawRecords] = useState([]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    // Geocode cache in React state so updates trigger re-render
+    const [geocodeCache, setGeocodeCache] = useState(() => getGeocodeCache());
+    // Queue of records that still need geocoding
+    const geocodeQueue = useRef([]);
+    const geocodeTimerRef = useRef(null);
+    const isMountedRef = useRef(true);
 
-    // Fetch Data
+    // ── 1. Fetch raw market records from Government API ─────────────────────
     useEffect(() => {
+        isMountedRef.current = true;
         let isMounted = true;
 
         const fetchData = async () => {
@@ -27,94 +38,158 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState,
             let resultData = [];
             let resultError = null;
             try {
-                // userState is directly updated by LiveMarket if overridden
-                const effectiveState = userState;
-                const { data, error: apiError } = await fetchMarketPrices({ 
-                    commodity: detectedCrop,
-                    state: effectiveState
+                const { data, error: apiError } = await fetchMarketPrices({
+                    commodity: detectedCrop
                 });
                 resultData = data;
                 resultError = apiError;
 
                 if (isMounted) {
-                    if (apiError) console.warn("API Error:", apiError);
+                    if (apiError) console.warn('API Error:', apiError);
                     setRawRecords(data || []);
-                    if (apiError) setError(apiError);
-                    else setError(null);
+                    setError(apiError || null);
                 }
             } catch {
-                if (isMounted) setError("Failed to load market data.");
+                if (isMounted) setError('Failed to load market data.');
             } finally {
-                if (isMounted) {
-                    setLoading(false);
-                    // If we have no records and no error, use fallbacks
-                    if (!resultData?.length && !resultError) {
-                        setRawRecords([]);
-                    }
-                }
+                if (isMounted) setLoading(false);
             }
         };
 
         fetchData();
 
-        return () => { isMounted = false; };
+        return () => {
+            isMounted = false;
+            isMountedRef.current = false;
+        };
     }, [detectedCrop, refreshTrigger]);
 
-    // Process Data
-    const processedMarkets = useMemo(() => {
-        if (!rawRecords.length && loading) return [];
+    // ── 2. Background geocoding queue processor ──────────────────────────────
+    const processGeocodeQueue = useCallback(async () => {
+        if (geocodeQueue.current.length === 0) return;
+
+        const record = geocodeQueue.current.shift();
+        const key = makeGeoKey(record.market, record.district, record.state);
+
+        // Double-check it wasn't cached by a parallel call
+        const latestCache = getGeocodeCache();
+        if (latestCache[key]) {
+            setGeocodeCache({ ...latestCache });
+            // Schedule next immediately
+            if (geocodeQueue.current.length > 0 && isMountedRef.current) {
+                geocodeTimerRef.current = setTimeout(processGeocodeQueue, GEOCODE_INTERVAL_MS);
+            }
+            return;
+        }
+
+        const coords = await fetchGeocode(record.market, record.district, record.state);
+
+        if (coords && isMountedRef.current) {
+            saveGeocodeCache(key, coords);
+            setGeocodeCache(getGeocodeCache()); // Trigger re-render with new coords
+        } else if (coords === null && isMountedRef.current) {
+            // Mark as "not found" so we don't retry every time
+            saveGeocodeCache(key, 'NOT_FOUND');
+        }
+
+        // Schedule the next item
+        if (geocodeQueue.current.length > 0 && isMountedRef.current) {
+            geocodeTimerRef.current = setTimeout(processGeocodeQueue, GEOCODE_INTERVAL_MS);
+        }
+    }, []);
+
+    // ── 3. Process raw records → compute distances, queue unknowns ───────────
+    useEffect(() => {
+        if (!rawRecords.length && loading) return;
 
         const userLat = location?.lat;
         const userLon = location?.lon;
-        const effectiveLat = userLat;
-        const effectiveLon = userLon;
+        const newQueue = [];
+        const latestCache = getGeocodeCache();
 
         const mapped = rawRecords.map(record => {
-            const marketCoords = getMarketCoords(record);
-            let distance;
+            const key = makeGeoKey(record.market, record.district, record.state);
 
-            if (effectiveLat && marketCoords) {
-                distance = calculateDistance(effectiveLat, effectiveLon, marketCoords.lat, marketCoords.lon);
-            } else if (address && record.district) {
-                const normAddress = address.toLowerCase();
-                const recordDistrict = record.district.toLowerCase();
-                // If the market is in the user's city/district, it's very close (5 to 25 km)
-                if (normAddress.includes(recordDistrict) || recordDistrict.includes(normAddress.split(',')[0].trim())) {
-                    const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    distance = (hash % 20) + 5;
-                } else if (userState && record.state && record.state.toLowerCase().includes(userState.toLowerCase())) {
-                    // If in the same state but different district, give it a realistic distance (30 to 140 km)
-                    const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    distance = (hash % 110) + 30;
-                } else {
-                    distance = 9999;
-                }
-            } else if (userState && record.state && record.state.toLowerCase().includes(userState.toLowerCase())) {
-                 const hash = record.market.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                 distance = (hash % 110) + 30;
-            } else {
-                distance = 9999;
+            // Priority 1: Exact GPS from our hardcoded database
+            const hardcodedCoords = getMarketCoords(record);
+            if (hardcodedCoords && userLat && userLon) {
+                const dist = calculateDistance(userLat, userLon, hardcodedCoords.lat, hardcodedCoords.lon);
+                return {
+                    ...record,
+                    distance: dist,
+                    distanceExact: true,
+                    travelExpense: calculateTravelExpense(dist)
+                };
+            }
+
+            // Priority 2: Cached geocode result from OpenStreetMap
+            const cached = latestCache[key];
+            if (cached && cached !== 'NOT_FOUND' && userLat && userLon) {
+                const dist = calculateDistance(userLat, userLon, cached.lat, cached.lon);
+                return {
+                    ...record,
+                    distance: dist,
+                    distanceExact: true,
+                    travelExpense: calculateTravelExpense(dist)
+                };
+            }
+
+            // Priority 3: Queue it for background geocoding
+            if (cached !== 'NOT_FOUND') {
+                newQueue.push(record);
+            }
+
+            // While waiting for geocode: estimate if in same state, else skip
+            let estimatedDist = null;
+            if (userState && record.state && record.state.toLowerCase().includes(userState.toLowerCase())) {
+                const hash = record.market.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+                estimatedDist = (hash % 110) + 30;
             }
 
             return {
                 ...record,
-                distance,
-                travelExpense: calculateTravelExpense(distance)
+                distance: estimatedDist,
+                distanceExact: false,
+                distancePending: cached !== 'NOT_FOUND',
+                travelExpense: estimatedDist !== null ? calculateTravelExpense(estimatedDist) : null
             };
         });
 
-        // Filter and Sort
-        // User Request: strict 150 km only
-        let final = mapped
-            .filter(m => m.distance >= 0 && m.distance <= 150)
-            .sort((a, b) => a.distance - b.distance);
+        // Filter: keep markets with exact distance ≤ 150km, or estimated distance ≤ 150km
+        const final = mapped
+            .filter(m => m.distance !== null && m.distance <= MAX_DISTANCE_KM)
+            .sort((a, b) => {
+                // Exact distances always sort above estimated ones
+                if (a.distanceExact && !b.distanceExact) return -1;
+                if (!a.distanceExact && b.distanceExact) return 1;
+                return a.distance - b.distance;
+            });
 
-        return final;
-    }, [rawRecords, loading, location, userState, address]);
+        setMarkets(final);
 
-    useEffect(() => {
-        setMarkets(processedMarkets);
-    }, [processedMarkets]);
+        // Update the queue and kick off geocoding if not already running
+        if (newQueue.length > 0) {
+            geocodeQueue.current = newQueue;
+            if (!geocodeTimerRef.current) {
+                geocodeTimerRef.current = setTimeout(processGeocodeQueue, 500);
+            }
+        }
 
-    return { markets, loading, error, refresh: () => setRefreshTrigger(p => p + 1) };
+        return () => {
+            clearTimeout(geocodeTimerRef.current);
+            geocodeTimerRef.current = null;
+        };
+    }, [rawRecords, loading, location, userState, geocodeCache, processGeocodeQueue]);
+
+    return {
+        markets,
+        loading,
+        error,
+        refresh: () => {
+            geocodeQueue.current = [];
+            clearTimeout(geocodeTimerRef.current);
+            geocodeTimerRef.current = null;
+            setRefreshTrigger(p => p + 1);
+        }
+    };
 };

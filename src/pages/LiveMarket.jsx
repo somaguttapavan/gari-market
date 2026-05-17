@@ -365,14 +365,28 @@ const LiveMarket = () => {
                                         <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>{market.district}, {market.state}</p>
                                     </div>
                                     <div style={{ 
-                                        backgroundColor: '#dcfce7', 
+                                        backgroundColor: market.distanceExact ? '#dcfce7' : '#fef9c3', 
                                         padding: '0.4rem 0.5rem', 
                                         borderRadius: '0.25rem', 
                                         textAlign: 'center',
-                                        minWidth: '55px'
+                                        minWidth: '70px'
                                     }}>
-                                        <div style={{ color: '#166534', fontWeight: 'bold', fontSize: '0.85rem' }}>{market.distance} km</div>
-                                        <div style={{ color: '#166534', fontSize: '0.7rem' }}>away</div>
+                                        {market.distancePending && !market.distanceExact ? (
+                                            <>
+                                                <div style={{ color: '#92400e', fontWeight: 'bold', fontSize: '0.75rem' }}>⏳ ~{market.distance} km</div>
+                                                <div style={{ color: '#92400e', fontSize: '0.65rem' }}>calculating</div>
+                                            </>
+                                        ) : market.distanceExact ? (
+                                            <>
+                                                <div style={{ color: '#166534', fontWeight: 'bold', fontSize: '0.85rem' }}>📍 {market.distance} km</div>
+                                                <div style={{ color: '#166534', fontSize: '0.7rem' }}>exact</div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div style={{ color: '#166534', fontWeight: 'bold', fontSize: '0.85rem' }}>~{market.distance} km</div>
+                                                <div style={{ color: '#166534', fontSize: '0.7rem' }}>est.</div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
