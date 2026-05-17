@@ -97,9 +97,9 @@ export const useNearbyMarkets = (location, userState, detectedCrop, manualState,
         });
 
         // Filter and Sort
-        // User Request: strict 100 km only
+        // User Request: strict 150 km only
         let final = mapped
-            .filter(m => m.distance >= 0 && m.distance <= 100)
+            .filter(m => m.distance >= 0 && m.distance <= 150)
             .sort((a, b) => a.distance - b.distance);
 
         return final;
