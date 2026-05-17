@@ -35,6 +35,14 @@ export const fetchMarketPrices = async (params = {}) => {
 
         if (response.data && response.data.records) {
             apiRecords = response.data.records;
+            
+            // STRICT FILTERING: Gov API sometimes ignores filters and returns all crops.
+            if (params.commodity) {
+                apiRecords = apiRecords.filter(record => 
+                    record.commodity && 
+                    record.commodity.toLowerCase().includes(params.commodity.toLowerCase())
+                );
+            }
         }
     } catch (error) {
         console.error('Error fetching market prices:', error);
@@ -74,8 +82,8 @@ const getFallbackMarkets = (commodity) => {
     });
 
     if (commodity) {
-        const filtered = all.filter(m => m.commodity.toLowerCase() === commodity.toLowerCase());
-        return filtered.length > 0 ? filtered : [all[0]]; // Always return something relevant if possible
+        const filtered = all.filter(m => m.commodity.toLowerCase().includes(commodity.toLowerCase()));
+        return filtered; // Return empty array if no matches, don't return random crops!
     }
     return all;
 };
