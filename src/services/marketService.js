@@ -17,7 +17,7 @@ export const fetchMarketPrices = async (params = {}) => {
         const queryParams = {
             'api-key': API_KEY,
             format: 'json',
-            limit: 500 // Increased for better regional coverage
+            limit: 1000 // Increased to get all available markets for the commodity
         };
 
         if (params.commodity) {
