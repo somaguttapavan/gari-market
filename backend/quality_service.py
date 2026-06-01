@@ -80,7 +80,7 @@ def analyze_tomato(img_array):
     b = img_array[:, :, 2].astype(float)
 
     # Subject mask: exclude near-black background
-    subject_mask = (r > 40) | (g > 40) | (b > 40)
+    subject_mask = (r > 20) | (g > 20) | (b > 20)
     subject_pixels = np.sum(subject_mask)
     total_pixels = img_array.shape[0] * img_array.shape[1]
 

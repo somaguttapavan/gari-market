@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FALLBACK_MARKETS, MOCK_CROPS, MARKET_COORDINATES } from '../data/marketFallbacks';
+import { FALLBACK_MARKETS, MOCK_CROPS, MARKET_COORDINATES } from '../data/marketFallbacks.js';
 
 const API_KEY = '579b464db66ec23bdd000001b73df47ab4804781628ccb38420ee62a';
 const RESOURCE_ID = '9ef84268-d588-465a-a308-a864a43d0070';

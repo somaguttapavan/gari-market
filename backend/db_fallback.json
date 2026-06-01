@@ -465,6 +465,12 @@
             "email": "user1@gmail.com",
             "password": "$pbkdf2-sha256$29000$5Lw3ZsxZC.Fc633PWUspRQ$60DBcq2MbTNurM0Uw470y/aB8lPnF1.y2ddLFi6ByOw",
             "location": "trichy, tamil nadu"
+        },
+        {
+            "fullName": "Test Farmer",
+            "email": "testfarmer99@gmail.com",
+            "password": "$pbkdf2-sha256$29000$n9OaE4KwlhICIGQshfBe6w$uF5962oCRTRrkrus6hvt2D54/haOMl.pJkmpAICO0Y4",
+            "location": "Trichy"
         }
     ]
 }

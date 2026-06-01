@@ -32,7 +32,7 @@ def simulate_roasted_tomato():
     print(f"Confidence: {result['confidence']}%")
     print(f"Advice: {result['advice']}")
     assert result['quality'] in ['Bad', 'Moderate'], f"FAIL: Expected Bad/Moderate, got {result['quality']}"
-    print("✅ PASS: Roasted tomato correctly detected as bad quality\n")
+    print("[PASS]: Roasted tomato correctly detected as bad quality\n")
 
 
 def simulate_fresh_tomato():
@@ -53,7 +53,7 @@ def simulate_fresh_tomato():
     print(f"Confidence: {result['confidence']}%")
     print(f"Advice: {result['advice']}")
     assert result['quality'] == 'Good', f"FAIL: Expected Good, got {result['quality']}"
-    print("✅ PASS: Fresh tomato correctly detected as good quality\n")
+    print("[PASS]: Fresh tomato correctly detected as good quality\n")
 
 
 if __name__ == "__main__":
