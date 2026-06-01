@@ -52,6 +52,24 @@ export default function App() {
     checkDevServer();
   }, []);
 
+  // ─── Backend Warmup Ping ─────────────────────────────────────────────────
+  // Pings the Render backend on startup so it wakes from free-tier sleep
+  // before the user tries to register / log in (~30s cold start).
+  useEffect(() => {
+    const warmup = async () => {
+      try {
+        await fetch('https://gari-market-backend.onrender.com/', {
+          method: 'GET',
+          cache: 'no-store',
+        });
+        console.log('[Warmup] Backend is awake.');
+      } catch (e) {
+        console.warn('[Warmup] Backend ping failed – may still be starting up:', e.message);
+      }
+    };
+    warmup();
+  }, []); // Run once on mount
+
   // ─── Native Google OAuth (system browser approach) ───────────────────────
   const handleGoogleAuth = useCallback(async () => {
     console.log('[NativeAuth] Triggered handleGoogleAuth');

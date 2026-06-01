@@ -5,6 +5,17 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
 import App from './App.jsx'
 
+// ─── Backend Warmup Ping ─────────────────────────────────────────────────────
+// The Render free tier spins down after 15 min of inactivity and takes ~30s to
+// wake up. We fire a silent ping the instant the page loads so the server is
+// warm before the user tries to login or use any feature.
+(function pingBackend() {
+    const BACKEND = 'https://gari-market-backend.onrender.com';
+    fetch(`${BACKEND}/`, { method: 'GET', cache: 'no-store' })
+        .then(() => console.log('[Warmup] Backend is awake.'))
+        .catch(() => console.warn('[Warmup] Backend ping failed – it may still be waking up.'));
+})();
+
 // Handle Native OAuth redirect back to mobile app in Expo Go or Standalone App
 if (typeof window !== 'undefined' && window.location.hash) {
     const hash = window.location.hash.substring(1);
