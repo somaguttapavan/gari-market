@@ -8,7 +8,7 @@ import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-const PRODUCTION_URL = 'https://gari-market-somaguttapavan.vercel.app';
+const PRODUCTION_URL = 'https://gari-market-q1pj.vercel.app';
 const GOOGLE_CLIENT_ID = '908874412227-0td5t7ftigm6itgcjh0m0sd77jn64fim.apps.googleusercontent.com';
 
 let LAPTOP_IP = '10.221.48.129';
@@ -20,7 +20,7 @@ const DEV_URL = `http://${LAPTOP_IP}:5173`;
 
 // The web app URL that is currently loading in the WebView
 // Google OAuth will redirect back to this origin after login
-const OAUTH_REDIRECT_BASE = 'https://gari-market-somaguttapavan.vercel.app';
+const OAUTH_REDIRECT_BASE = 'https://gari-market-q1pj.vercel.app';
 
 export default function App() {
   const [error, setError] = useState(false);

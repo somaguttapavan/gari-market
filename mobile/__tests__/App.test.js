@@ -25,7 +25,7 @@ jest.mock('expo-status-bar', () => ({
 
 // Mock expo-web-browser
 jest.mock('expo-web-browser', () => ({
-    openAuthSessionAsync: jest.fn(() => Promise.resolve({ type: 'success', url: 'https://gari-market-somaguttapavan.vercel.app/auth/callback#access_token=mockToken' })),
+    openAuthSessionAsync: jest.fn(() => Promise.resolve({ type: 'success', url: 'https://gari-market-q1pj.vercel.app/auth/callback#access_token=mockToken' })),
     dismissAuthSession: jest.fn(),
     maybeCompleteAuthSession: jest.fn(),
 }));
