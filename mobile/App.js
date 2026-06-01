@@ -95,11 +95,6 @@ export default function App() {
         console.log('[NativeAuth] Extracted accessToken from fragment:', accessToken ? 'TokenExists' : 'NO_TOKEN_FOUND');
 
         if (accessToken) {
-          // Dynamically load the WebView with the google_token query parameter to avoid timing race conditions
-          const targetUrl = `${activeUrlRef.current}/login?google_token=${accessToken}`;
-          console.log('[NativeAuth] Dynamically re-routing WebView to target URL:', targetUrl);
-          setLoadUrl(targetUrl);
-
           // Fetch user profile from Google
           console.log('[NativeAuth] Fetching user profile from Google info endpoint...');
           const userResp = await fetch(
