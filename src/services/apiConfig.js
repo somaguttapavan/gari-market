@@ -24,7 +24,7 @@ const getBaseUrl = () => {
         }
 
         // Direct local IP or localhost — use current hostname on port 8000
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
             return `http://${hostname}:8000`;
         }
     }

@@ -40,8 +40,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const googleLogin = (userData) => {
-        // We bypass the backend for Google Auth for simplicity,
-        // unless you have a dedicated backend route for token verification.
+        console.log('[AuthContext] googleLogin called with:', userData);
         const authData = {
             ...userData,
             token: userData.sub, // Use Google ID as a mock token
@@ -49,6 +48,7 @@ export const AuthProvider = ({ children }) => {
         };
         localStorage.setItem('agri_user', JSON.stringify(authData));
         setUser(authData);
+        console.log('[AuthContext] User state updated to:', authData);
         return { success: true };
     };
 

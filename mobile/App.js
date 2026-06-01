@@ -54,6 +54,7 @@ export default function App() {
 
   // ─── Native Google OAuth (system browser approach) ───────────────────────
   const handleGoogleAuth = useCallback(async () => {
+    console.log('[NativeAuth] Triggered handleGoogleAuth');
     try {
       // Get the correct deep link scheme for returning to the app
       let appScheme = 'com.agrigrowth.app://';
@@ -62,6 +63,8 @@ export default function App() {
         const hostPort = hostUri ? hostUri.split(':')[1] || '8081' : '8081';
         appScheme = `exp://${LAPTOP_IP}:${hostPort}`;
       }
+
+      console.log('[NativeAuth] executionEnvironment:', Constants?.executionEnvironment, 'appScheme resolved to:', appScheme);
 
       // The redirect URI must be registered in Google Cloud Console.
       // We redirect back to the production URL /auth/callback so Google accepts it.
@@ -76,8 +79,12 @@ export default function App() {
         `&prompt=select_account` +
         `&state=${stateParam}`;
 
+      console.log('[NativeAuth] Launching AuthSession with URL:', authUrl);
+      console.log('[NativeAuth] Awaiting redirect to callback:', `${OAUTH_REDIRECT_BASE}/auth/callback`);
+
       // Open in system browser — Google allows this (unlike WebView)
       const result = await WebBrowser.openAuthSessionAsync(authUrl, `${OAUTH_REDIRECT_BASE}/auth/callback`);
+      console.log('[NativeAuth] openAuthSessionAsync result received:', result);
 
       if (result.type === 'success' && result.url) {
         // Extract access_token from the redirect URL fragment
@@ -85,18 +92,28 @@ export default function App() {
         const params = Object.fromEntries(urlFragment.split('&').map(p => p.split('=')));
         const accessToken = params['access_token'];
 
+        console.log('[NativeAuth] Extracted accessToken from fragment:', accessToken ? 'TokenExists' : 'NO_TOKEN_FOUND');
+
         if (accessToken) {
+          // Dynamically load the WebView with the google_token query parameter to avoid timing race conditions
+          const targetUrl = `${activeUrlRef.current}/login?google_token=${accessToken}`;
+          console.log('[NativeAuth] Dynamically re-routing WebView to target URL:', targetUrl);
+          setLoadUrl(targetUrl);
+
           // Fetch user profile from Google
+          console.log('[NativeAuth] Fetching user profile from Google info endpoint...');
           const userResp = await fetch(
             `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
           );
           const userInfo = await userResp.json();
+          console.log('[NativeAuth] Retrieved user profile from Google:', userInfo);
 
           if (webViewRef.current && userInfo.sub) {
             // Safely escape all string values for injection
             const safe = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
             const script = `
               (function() {
+                console.log('[WebView] Received GOOGLE_AUTH_RESULT event injection inside WebView');
                 window.dispatchEvent(new CustomEvent('GOOGLE_AUTH_RESULT', {
                   detail: {
                     success: true,
@@ -113,8 +130,10 @@ export default function App() {
               })();
               true;
             `;
+            console.log('[NativeAuth] Injecting auth success script into WebView...');
             webViewRef.current.injectJavaScript(script);
           } else {
+            console.warn('[NativeAuth] Missing webViewRef or userInfo.sub! sub:', userInfo.sub, 'webViewExists:', !!webViewRef.current);
             // No sub or no userInfo — auth failed
             if (webViewRef.current) {
               webViewRef.current.injectJavaScript(`
@@ -126,6 +145,7 @@ export default function App() {
             }
           }
         } else {
+          console.warn('[NativeAuth] No access token was present in the redirect hash fragment.');
           // No access token in redirect
           if (webViewRef.current) {
             webViewRef.current.injectJavaScript(`
@@ -137,6 +157,7 @@ export default function App() {
           }
         }
       } else if (result.type === 'cancel' || result.type === 'dismiss') {
+        console.log('[NativeAuth] User dismissed or cancelled the browser session.');
         // User closed the browser — silently ignore
         if (webViewRef.current) {
           webViewRef.current.injectJavaScript(`

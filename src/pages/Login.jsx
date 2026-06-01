@@ -41,6 +41,33 @@ const Login = () => {
         };
     }, []);
 
+    // ── Handle Google Token in URL query parameter (for reliable WebView OAuth) ──
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const googleToken = params.get('google_token');
+        if (googleToken) {
+            console.log('[Login] Found google_token in URL query:', googleToken);
+            setGoogleLoading(true);
+            setError('');
+            
+            fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${googleToken}`)
+                .then(resp => {
+                    if (!resp.ok) throw new Error('Failed to fetch user info from Google API');
+                    return resp.json();
+                })
+                .then(userInfo => {
+                    console.log('[Login] Successfully fetched Google user info inside WebView:', userInfo);
+                    googleLogin(userInfo);
+                    navigate('/', { replace: true });
+                })
+                .catch(err => {
+                    console.error('[Login] Error during Google token auto-login:', err);
+                    setError('Google Sign-In failed. Please try again.');
+                    setGoogleLoading(false);
+                });
+        }
+    }, [googleLogin, navigate]);
+
     // ── Listen for native Google auth result ────────────────────────────────
     useEffect(() => {
         if (!isWebView) return;

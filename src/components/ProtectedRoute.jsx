@@ -6,6 +6,8 @@ const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
 
+    console.log('[ProtectedRoute] Check:', { user, loading, path: location.pathname });
+
     if (loading) {
         return (
             <div style={{
@@ -29,10 +31,12 @@ const ProtectedRoute = ({ children }) => {
     }
 
     if (!user) {
+        console.log('[ProtectedRoute] No user found, redirecting to /login from:', location.pathname);
         // Redirect to login but save the attempted location
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
+    console.log('[ProtectedRoute] User validated, rendering component:', location.pathname);
     return children;
 };
 
