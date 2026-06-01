@@ -20,7 +20,7 @@ const DEV_URL = `http://${LAPTOP_IP}:5173`;
 
 // The web app URL that is currently loading in the WebView
 // Google OAuth will redirect back to this origin after login
-const OAUTH_REDIRECT_BASE = 'https://agrigrowth-frontend.vercel.app';
+const OAUTH_REDIRECT_BASE = 'https://gari-market-q1pj.vercel.app';
 
 export default function App() {
   const [error, setError] = useState(false);
