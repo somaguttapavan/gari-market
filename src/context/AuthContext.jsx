@@ -7,7 +7,9 @@ const AuthContext = createContext();
 // ─── Retry helper ────────────────────────────────────────────────────────────
 // On pure network errors (no response at all) the Render free-tier server may
 // still be waking up. Retry up to MAX_RETRIES times before giving up.
-const MAX_RETRIES     = 3;
+// Render cold start: ~30-60s. 8 retries × 5s = 40s fallback window.
+// NOTE: The button-level lock in Login/Register prevents most premature calls.
+const MAX_RETRIES     = 8;
 const RETRY_DELAY_MS  = 5000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

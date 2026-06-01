@@ -296,10 +296,28 @@ const Login = () => {
                     <button
                         type="submit"
                         className="btn-primary"
-                        disabled={isLoading}
-                        style={{ marginTop: '1rem', justifyContent: 'center', opacity: isLoading ? 0.7 : 1 }}
+                        disabled={isLoading || (backendChecking && !backendReady)}
+                        style={{
+                            marginTop: '1rem',
+                            justifyContent: 'center',
+                            opacity: isLoading || (backendChecking && !backendReady) ? 0.65 : 1,
+                            cursor: (backendChecking && !backendReady) ? 'not-allowed' : 'pointer',
+                        }}
                     >
-                        {isLoading ? 'Signing In...' : (
+                        {isLoading ? 'Signing In...' : (backendChecking && !backendReady) ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                                <span style={{
+                                    width: '14px', height: '14px',
+                                    border: '2px solid rgba(255,255,255,0.4)',
+                                    borderTopColor: '#ffffff',
+                                    borderRadius: '50%',
+                                    display: 'inline-block',
+                                    animation: 'spin-btn 0.8s linear infinite',
+                                }} />
+                                Server starting…
+                                <style>{`@keyframes spin-btn { to { transform: rotate(360deg); } }`}</style>
+                            </span>
+                        ) : (
                             <>
                                 <LogIn size={18} />
                                 Sign In
