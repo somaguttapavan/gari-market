@@ -23,6 +23,13 @@ jest.mock('expo-status-bar', () => ({
     StatusBar: (props) => null,
 }));
 
+// Mock expo-web-browser
+jest.mock('expo-web-browser', () => ({
+    openAuthSessionAsync: jest.fn(() => Promise.resolve({ type: 'success', url: 'https://gari-market-somaguttapavan.vercel.app/auth/callback#access_token=mockToken' })),
+    dismissAuthSession: jest.fn(),
+    maybeCompleteAuthSession: jest.fn(),
+}));
+
 // Mock expo-constants
 jest.mock('expo-constants', () => ({
     __esModule: true,
