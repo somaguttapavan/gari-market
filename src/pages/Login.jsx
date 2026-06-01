@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Sprout, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useBackendWarmup } from '../hooks/useBackendWarmup';
 import { motion } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
@@ -20,6 +21,9 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isWebView, setIsWebView] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+
+    // Backend warmup — polls Render until it wakes from free-tier sleep
+    const { isReady: backendReady, isChecking: backendChecking, retries: backendRetries } = useBackendWarmup();
 
     useEffect(() => {
         setIsWebView(isInWebView());
@@ -132,6 +136,62 @@ const Login = () => {
                     <h2 style={{ fontSize: '2rem', color: 'var(--primary-dark)' }}>Login</h2>
                     <p style={{ color: 'var(--text-light)' }}>Access your farming dashboard</p>
                 </div>
+
+                {/* ── Server warmup banner ── */}
+                {backendChecking && !backendReady && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        padding: '0.7rem 1rem',
+                        backgroundColor: '#fffbeb',
+                        border: '1px solid #fcd34d',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1.25rem',
+                        fontSize: '0.82rem',
+                        color: '#92400e',
+                    }}>
+                        {/* Animated pulse dot */}
+                        <span style={{
+                            display: 'inline-block',
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '50%',
+                            backgroundColor: '#f59e0b',
+                            flexShrink: 0,
+                            animation: 'pulse-dot 1.4s ease-in-out infinite',
+                        }} />
+                        <span>
+                            {backendRetries === 0
+                                ? 'Connecting to server…'
+                                : `Server is waking up… (${backendRetries * 5}s)`}
+                            {' '}You can still fill in your details.
+                        </span>
+                        <style>{`
+                            @keyframes pulse-dot {
+                                0%, 100% { opacity: 1; transform: scale(1); }
+                                50%       { opacity: 0.4; transform: scale(1.4); }
+                            }
+                        `}</style>
+                    </div>
+                )}
+                {backendReady && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.55rem 1rem',
+                        backgroundColor: '#f0fdf4',
+                        border: '1px solid #86efac',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1.25rem',
+                        fontSize: '0.82rem',
+                        color: '#166534',
+                    }}>
+                        <span>✅</span>
+                        <span>Server is ready.</span>
+                    </div>
+                )}
 
                 {error && (
                     <div style={{
